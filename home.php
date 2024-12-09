@@ -148,7 +148,90 @@ if (!isset($_SESSION['name'])) {
         .delete-btn:hover {
             background-color: #c9302c;
         }
+
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            display: none;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .popup {
+            background-color: white;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .popup h3 {
+            margin: 0 0 10px;
+        }
+
+        .popup button {
+            margin: 10px 5px 0;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .popup .confirm-btn {
+            background-color: #d9534f;
+            color: white;
+        }
+
+        .popup .cancel-btn {
+            background-color: #ccc;
+            color: black;
+        }
     </style>
+    <script src="usjr/axios.min.js"></script>
+    <script>
+        function editStudent(id) {
+            window.location.href = `editstudent.php?id=${id}`;
+        }
+
+        function deleteStudent(id) {
+            const overlay = document.createElement('div');
+            overlay.className = 'overlay';
+            overlay.innerHTML = `
+                <div class="popup">
+                    <h3>Are you sure you want to delete this student?</h3>
+                    <button class="confirm-btn">Yes</button>
+                    <button class="cancel-btn">No</button>
+                </div>
+            `;
+            document.body.appendChild(overlay);
+            overlay.style.display = 'flex';
+
+            overlay.querySelector('.confirm-btn').addEventListener('click', () => {
+                axios.post('deletestudent.php', { id: id })
+                    .then(response => {
+                        if (response.data.success) {
+                            alert('Student deleted successfully');
+                            location.reload();
+                        } else {
+                            alert('Failed to delete student: ' + response.data.error);
+                        }
+                        document.body.removeChild(overlay);
+                    })
+                    .catch(error => {
+                        console.error('There was an error!', error);
+                        document.body.removeChild(overlay);
+                    });
+            });
+
+            overlay.querySelector('.cancel-btn').addEventListener('click', () => {
+                document.body.removeChild(overlay);
+            });
+        }
+    </script>
 </head>
 <body>
     <div class="wrapper">
@@ -213,11 +296,8 @@ if (!isset($_SESSION['name'])) {
                             <td>{$row['progfullname']}</td>
                             <td>{$row['studyear']}</td>
                             <td>
-                                <a href='editstudent.php?id={$row['studid']}' class='edit-btn'>Edit</a>
-                                <form action='deletestudent.php' method='POST' style='display:inline;'>
-                                    <input type='hidden' name='id' value='{$row['studid']}'>
-                                    <button type='submit' class='delete-btn' onclick='return confirm(\"Are you sure you want to delete this student?\")'>Delete</button>
-                                </form>
+                                <button class='edit-btn' onclick='editStudent({$row['studid']})'>Edit</button>
+                                <button class='delete-btn' onclick='deleteStudent({$row['studid']})'>Delete</button>
                             </td>
                         </tr>";
                     }

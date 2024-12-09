@@ -68,6 +68,17 @@
         .reset-btn:hover {
             background-color: #e53935;
         }
+        .login-link {
+            text-align: center;
+            margin-top: 20px;
+        }
+        .login-link a {
+            color: #0275d8;
+            text-decoration: none;
+        }
+        .login-link a:hover {
+            text-decoration: underline;
+        }
     </style>
 </head>
 <body>
@@ -91,6 +102,9 @@
                 <button type="reset" class="reset-btn">Clear</button>
             </div>
         </form>
+        <div class="login-link">
+            Already have an account? <a href="login.php">Sign in here</a>
+        </div>
     </div>
 </body>
 </html>

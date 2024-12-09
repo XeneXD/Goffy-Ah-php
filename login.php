@@ -128,6 +128,20 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['login'])) {
             text-align: center;
             margin-bottom: 15px;
         }
+
+        .register-link {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .register-link a {
+            color: #007bff;
+            text-decoration: none;
+        }
+
+        .register-link a:hover {
+            text-decoration: underline;
+        }
     </style>
 </head>
 <body>
@@ -154,6 +168,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['login'])) {
                 <button type="reset" class="clear-btn">Clear</button>
             </div>
         </form>
+        <div class="register-link">
+            <p>If you don't have an account, <a href="register.php">Register here</a>.</p>
+        </div>
     </div>
 </body>
 </html>
