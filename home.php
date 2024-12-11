@@ -4,6 +4,11 @@ if (!isset($_SESSION['name'])) {
     header("Location: login.php");
     exit();
 }
+
+$departmentFilter = "";
+if (isset($_GET['department']) && !empty($_GET['department'])) {
+    $departmentFilter = "WHERE s.studcollid = :department";
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -191,7 +196,7 @@ if (!isset($_SESSION['name'])) {
             color: black;
         }
     </style>
-    <script src="usjr/axios.min.js"></script>
+    <script src="axios.min.js"></script>
     <script>
         function editStudent(id) {
             window.location.href = `editstudent.php?id=${id}`;
@@ -259,6 +264,29 @@ if (!isset($_SESSION['name'])) {
             </form>
         </div>
 
+        <!-- Department Filter Form -->
+        <form method="GET" action="">
+            <label for="department">Filter by Department:</label>
+            <select name="department" id="department">
+                <option value="">All Departments</option>
+                <?php
+                // Fetch departments from the database
+                try {
+                    $pdo = new PDO("mysql:host=localhost:3306;dbname=usjr", "root", "root");
+                    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+                    $deptStmt = $pdo->query("SELECT collid, collfullname FROM colleges");
+
+                    while ($deptRow = $deptStmt->fetch(PDO::FETCH_ASSOC)) {
+                        echo "<option value=\"{$deptRow['collid']}\">{$deptRow['collfullname']}</option>";
+                    }
+                } catch (PDOException $e) {
+                    error_log("Database error: " . $e->getMessage());
+                }
+                ?>
+            </select>
+            <button type="submit">Filter</button>
+        </form>
+
         <h2>Student Entries</h2>
         <table>
             <thead>
@@ -279,12 +307,20 @@ if (!isset($_SESSION['name'])) {
                     $pdo = new PDO("mysql:host=localhost:3306;dbname=usjr", "root", "root");
                     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
-                    $stmt = $pdo->query("
+                    $sql = "
                         SELECT s.studid, s.studfirstname, s.studlastname, s.studmidname, c.collfullname, p.progfullname, s.studyear
                         FROM students s
                         JOIN colleges c ON s.studcollid = c.collid
                         JOIN programs p ON s.studprogid = p.progid
-                    ");
+                        $departmentFilter
+                    ";
+                    $stmt = $pdo->prepare($sql);
+
+                    if (!empty($departmentFilter)) {
+                        $stmt->bindParam(':department', $_GET['department'], PDO::PARAM_INT);
+                    }
+
+                    $stmt->execute();
 
                     while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
                         echo "<tr>
