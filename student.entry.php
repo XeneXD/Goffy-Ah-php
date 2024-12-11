@@ -46,8 +46,9 @@ if (isset($_GET['id'])) {
     }
 }
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['college_id'])) {
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['college_id']) && !isset($_POST['save_student'])) {
     $selectedCollege = $_POST['college_id'];
+    $selectedProgram = ''; // Reset program selection
 
     try {
         $pdo = new PDO("mysql:host=localhost:3306;dbname=usjr", "root", "root");
@@ -72,20 +73,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_student'])) {
         $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
         if ($studentId) {
-            $stmt = $pdo->prepare("SELECT progcollid FROM programs WHERE progid = ?");
-            $stmt->execute([$selectedProgram]);
-            $newCollege = $stmt->fetchColumn();
-
-            if ($newCollege != $selectedCollege) {
-                $yearLevel = 1;
-            }
-
             $stmt = $pdo->prepare("
                 UPDATE students
                 SET studfirstname = ?, studlastname = ?, studmidname = ?, studprogid = ?, studcollid = ?, studyear = ?
                 WHERE studid = ?
             ");
-            $stmt->execute([$firstName, $lastName, $middleName, $selectedProgram, $newCollege, $yearLevel, $studentId]);
+            $stmt->execute([$firstName, $lastName, $middleName, $selectedProgram, $selectedCollege, $yearLevel, $studentId]);
         } else {
             $stmt = $pdo->query("SELECT IFNULL(MAX(studid), 0) AS max_studid FROM students");
             $new_studid = $stmt->fetch(PDO::FETCH_ASSOC)['max_studid'] + 1;
@@ -222,7 +215,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_student'])) {
         <div class="form-group">
             <label for="program_id">Program</label>
             <select id="program_id" name="program_id" required>
-                <option value="" disabled <?= empty($selectedProgram) ? 'selected' : '' ?>>Select a program</option>
+                <option value="" selected disabled>Select a program</option>
                 <?php
                 foreach ($programs as $program) {
                     $isSelected = $program['progid'] == $selectedProgram ? 'selected' : '';
