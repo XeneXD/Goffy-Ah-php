@@ -48,6 +48,10 @@ if (isset($_GET['id'])) {
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['college_id']) && !isset($_POST['save_student'])) {
     $selectedCollege = $_POST['college_id'];
+    $firstName = $_POST['first_name'];
+    $lastName = $_POST['last_name'];
+    $middleName = $_POST['middle_name'];
+    $yearLevel = $_POST['year_level'];
     $selectedProgram = ''; // Reset program selection
 
     try {
@@ -88,6 +92,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_student'])) {
                 VALUES (?, ?, ?, ?, ?, ?, ?)
             ");
             $stmt->execute([$new_studid, $firstName, $lastName, $middleName, $selectedProgram, $selectedCollege, $yearLevel]);
+            $studentId = $new_studid;
         }
 
         header("Location: home.php");
@@ -143,6 +148,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_student'])) {
         border-radius: 4px;
         font-size: 14px;
     }
+    input[readonly] {
+        background-color: #f0f0f0;
+    }
     .button-group {
         display: flex;
         justify-content: space-between;
@@ -178,6 +186,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_student'])) {
 <div class="form-container">
     <h2><?= $studentId ? "Edit Student" : "Register Student" ?></h2>
     <form action="student.entry.php<?= $studentId ? '?id=' . $studentId : '' ?>" method="POST">
+        <div class="form-group">
+            <label for="student_id">Student ID</label>
+            <input type="text" id="student_id" name="student_id" value="<?= htmlspecialchars($studentId) ?>" readonly>
+        </div>
         <div class="form-group">
             <label for="first_name">First Name</label>
             <input type="text" id="first_name" name="first_name" value="<?= htmlspecialchars($firstName) ?>" placeholder="Enter first name" required>
@@ -237,4 +249,4 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_student'])) {
     </form>
 </div>
 </body>
-</html>
+</html></html>
