@@ -188,7 +188,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_student'])) {
     <form action="student.entry.php<?= $studentId ? '?id=' . $studentId : '' ?>" method="POST">
         <div class="form-group">
             <label for="student_id">Student ID</label>
-            <input type="text" id="student_id" name="student_id" value="<?= htmlspecialchars($studentId) ?>" readonly>
+            <input type="text" id="student_id" name="student_id" value="<?= htmlspecialchars($studentId ?? '') ?>" readonly>
         </div>
         <div class="form-group">
             <label for="first_name">First Name</label>
@@ -249,4 +249,4 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_student'])) {
     </form>
 </div>
 </body>
-</html></html>
+</html>
