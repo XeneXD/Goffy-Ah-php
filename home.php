@@ -228,7 +228,6 @@ if (isset($_GET['department']) && !empty($_GET['department'])) {
             <select name="department" id="department">
                 <option value="">All Departments</option>
                 <?php
-                // Fetch departments from the database
                 try {
                     $pdo = new PDO("mysql:host=localhost:3306;dbname=usjr", "root", "root");
                     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
@@ -305,10 +304,31 @@ if (isset($_GET['department']) && !empty($_GET['department'])) {
     </div>
 
     <script src="axios.min.js"></script>
+    <script src="axios.min.js"></script>
     <script>
-        function editStudent(id) {
-            window.location.href = `editstudent.php?id=${id}`;
+        function showPopupMessage(message, type) {
+            const overlay = document.createElement('div');
+            overlay.className = 'overlay';
+            overlay.innerHTML = `
+                <div class="popup">
+                    <h3>${message}</h3>
+                    <button class="confirm-btn">OK</button>
+                </div>
+            `;
+            document.body.appendChild(overlay);
+            overlay.style.display = 'flex';
+
+            overlay.querySelector('.confirm-btn').addEventListener('click', () => {
+                document.body.removeChild(overlay);
+                if (type === 'success') {
+                    location.reload();
+                }
+            });
         }
+
+        function editStudent(id) {
+        window.location.href = `student.entry.php?id=${id}`;
+    }
 
         function deleteStudent(id) {
             const overlay = document.createElement('div');
@@ -327,16 +347,14 @@ if (isset($_GET['department']) && !empty($_GET['department'])) {
                 axios.post('deletestudent.php', { id: id })
                     .then(response => {
                         if (response.data.success) {
-                            alert('Student deleted successfully');
-                            location.reload();
+                            showPopupMessage('Student deleted successfully', 'success');
                         } else {
-                            alert('Failed to delete student: ' + response.data.error);
+                            showPopupMessage('Failed to delete student: ' + response.data.error, 'error');
                         }
-                        document.body.removeChild(overlay);
                     })
                     .catch(error => {
                         console.error('There was an error!', error);
-                        document.body.removeChild(overlay);
+                        showPopupMessage('An error occurred while deleting the student', 'error');
                     });
             });
 

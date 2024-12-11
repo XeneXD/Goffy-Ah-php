@@ -14,31 +14,37 @@ $yearLevel = '';
 $selectedProgram = '';
 $studentId = null;
 
-
-if (isset($_SESSION['edit_student'])) {
-    $student = $_SESSION['edit_student'];
-    $studentId = $student['studid'];
-    $firstName = $student['studfirstname'];
-    $lastName = $student['studlastname'];
-    $middleName = $student['studmidname'];
-    $selectedProgram = $student['studprogid'];
-    $selectedCollege = $student['progcollid'];
-    $yearLevel = $student['studyear'];
-
-    
+if (isset($_GET['id'])) {
     try {
         $pdo = new PDO("mysql:host=localhost:3306;dbname=usjr", "root", "root");
-        $stmt = $pdo->prepare("SELECT progid, progfullname FROM programs WHERE progcollid = ?");
-        $stmt->execute([$selectedCollege]);
-        $programs = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        $stmt = $pdo->prepare("
+            SELECT s.*, p.progcollid 
+            FROM students s 
+            JOIN programs p ON s.studprogid = p.progid 
+            WHERE s.studid = ?
+        ");
+        $stmt->execute([$_GET['id']]);
+        $student = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if ($student) {
+            $studentId = $student['studid'];
+            $firstName = $student['studfirstname'];
+            $lastName = $student['studlastname'];
+            $middleName = $student['studmidname'];
+            $selectedProgram = $student['studprogid'];
+            $selectedCollege = $student['progcollid'];
+            $yearLevel = $student['studyear'];
+
+            $stmt = $pdo->prepare("SELECT progid, progfullname FROM programs WHERE progcollid = ?");
+            $stmt->execute([$selectedCollege]);
+            $programs = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } else {
+            echo "Student not found.";
+        }
     } catch (PDOException $e) {
-        echo "<p>Error fetching programs: " . htmlspecialchars($e->getMessage()) . "</p>";
+        echo "Error: " . htmlspecialchars($e->getMessage());
     }
-
-    
-    unset($_SESSION['edit_student']);
 }
-
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['college_id'])) {
     $selectedCollege = $_POST['college_id'];
@@ -53,7 +59,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['college_id'])) {
     }
 }
 
-
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_student'])) {
     $firstName = $_POST['first_name'];
     $lastName = $_POST['last_name'];
@@ -67,15 +72,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_student'])) {
         $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
         if ($studentId) {
-            
+            $stmt = $pdo->prepare("SELECT progcollid FROM programs WHERE progid = ?");
+            $stmt->execute([$selectedProgram]);
+            $newCollege = $stmt->fetchColumn();
+
+            if ($newCollege != $selectedCollege) {
+                $yearLevel = 1;
+            }
+
             $stmt = $pdo->prepare("
                 UPDATE students
                 SET studfirstname = ?, studlastname = ?, studmidname = ?, studprogid = ?, studcollid = ?, studyear = ?
                 WHERE studid = ?
             ");
-            $stmt->execute([$firstName, $lastName, $middleName, $selectedProgram, $selectedCollege, $yearLevel, $studentId]);
+            $stmt->execute([$firstName, $lastName, $middleName, $selectedProgram, $newCollege, $yearLevel, $studentId]);
         } else {
-            
             $stmt = $pdo->query("SELECT IFNULL(MAX(studid), 0) AS max_studid FROM students");
             $new_studid = $stmt->fetch(PDO::FETCH_ASSOC)['max_studid'] + 1;
 
@@ -169,9 +180,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_student'])) {
         background-color: #b71c1c;
     }
 </style>
+</head>
+<body>
 <div class="form-container">
     <h2><?= $studentId ? "Edit Student" : "Register Student" ?></h2>
-    <form action="student.entry.php" method="POST">
+    <form action="student.entry.php<?= $studentId ? '?id=' . $studentId : '' ?>" method="POST">
         <div class="form-group">
             <label for="first_name">First Name</label>
             <input type="text" id="first_name" name="first_name" value="<?= htmlspecialchars($firstName) ?>" placeholder="Enter first name" required>
