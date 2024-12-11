@@ -196,49 +196,7 @@ if (isset($_GET['department']) && !empty($_GET['department'])) {
             color: black;
         }
     </style>
-    <script src="axios.min.js"></script>
-    <script>
-        function editStudent(id) {
-            window.location.href = `editstudent.php?id=${id}`;
-        }
-
-        function deleteStudent(id) {
-            const overlay = document.createElement('div');
-            overlay.className = 'overlay';
-            overlay.innerHTML = `
-                <div class="popup">
-                    <h3>Are you sure you want to delete this student?</h3>
-                    <button class="confirm-btn">Yes</button>
-                    <button class="cancel-btn">No</button>
-                </div>
-            `;
-            document.body.appendChild(overlay);
-            overlay.style.display = 'flex';
-
-            overlay.querySelector('.confirm-btn').addEventListener('click', () => {
-                axios.post('deletestudent.php', { id: id })
-                    .then(response => {
-                        if (response.data.success) {
-                            alert('Student deleted successfully');
-                            location.reload();
-                        } else {
-                            alert('Failed to delete student: ' + response.data.error);
-                        }
-                        document.body.removeChild(overlay);
-                    })
-                    .catch(error => {
-                        console.error('There was an error!', error);
-                        document.body.removeChild(overlay);
-                    });
-            });
-
-            overlay.querySelector('.cancel-btn').addEventListener('click', () => {
-                document.body.removeChild(overlay);
-            });
-        }
-    </script>
-</head>
-<body>
+    <body>
     <div class="wrapper">
         <header>
             <div>
@@ -345,5 +303,47 @@ if (isset($_GET['department']) && !empty($_GET['department'])) {
             </tbody>
         </table>
     </div>
+
+    <script src="axios.min.js"></script>
+    <script>
+        function editStudent(id) {
+            window.location.href = `editstudent.php?id=${id}`;
+        }
+
+        function deleteStudent(id) {
+            const overlay = document.createElement('div');
+            overlay.className = 'overlay';
+            overlay.innerHTML = `
+                <div class="popup">
+                    <h3>Are you sure you want to delete this student?</h3>
+                    <button class="confirm-btn">Yes</button>
+                    <button class="cancel-btn">No</button>
+                </div>
+            `;
+            document.body.appendChild(overlay);
+            overlay.style.display = 'flex';
+
+            overlay.querySelector('.confirm-btn').addEventListener('click', () => {
+                axios.post('deletestudent.php', { id: id })
+                    .then(response => {
+                        if (response.data.success) {
+                            alert('Student deleted successfully');
+                            location.reload();
+                        } else {
+                            alert('Failed to delete student: ' + response.data.error);
+                        }
+                        document.body.removeChild(overlay);
+                    })
+                    .catch(error => {
+                        console.error('There was an error!', error);
+                        document.body.removeChild(overlay);
+                    });
+            });
+
+            overlay.querySelector('.cancel-btn').addEventListener('click', () => {
+                document.body.removeChild(overlay);
+            });
+        }
+    </script>
 </body>
 </html>
