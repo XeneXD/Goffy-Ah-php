@@ -28,7 +28,7 @@ if (isset($_GET['department']) && !empty($_GET['department'])) {
             width: 100%;
             max-width: 1200px;
             margin: 40px auto;
-            background-color: #ffffff ;
+            background-color: #ffffff;
             padding: 20px;
             border-radius: 8px;
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
@@ -196,172 +196,172 @@ if (isset($_GET['department']) && !empty($_GET['department'])) {
             color: black;
         }
     </style>
-    <body>
-    <div class="wrapper">
-        <header>
-            <div>
-                <h1 class="header-title">Dashboard</h1>
-                <p class="user-info">Logged in as: <?php echo htmlspecialchars($_SESSION['name']); ?></p>
-            </div>
-            <form action="logout.php" method="POST" class="logout-form">
-                <button type="submit" class="logout-btn">Logout</button>
-            </form>
-        </header>
-
-        <?php if (isset($_SESSION['success'])): ?>
-            <div class="message success"><?php echo htmlspecialchars($_SESSION['success']); unset($_SESSION['success']); ?></div>
-        <?php endif; ?>
-
-        <?php if (isset($_SESSION['error'])): ?>
-            <div class="message error"><?php echo htmlspecialchars($_SESSION['error']); unset($_SESSION['error']); ?></div>
-        <?php endif; ?>
-
-        <div class="action-bar">
-            <form action="student.entry.php" method="POST">
-                <button type="submit" class="add-btn">Add New Student</button>
-            </form>
+</head>
+<body>
+<div class="wrapper">
+    <header>
+        <div>
+            <h1 class="header-title">Dashboard</h1>
+            <p class="user-info">Logged in as: <?php echo htmlspecialchars($_SESSION['name']); ?></p>
         </div>
-
-        <!-- Department Filter Form -->
-        <form method="GET" action="">
-            <label for="department">Filter by Department:</label>
-            <select name="department" id="department">
-                <option value="">All Departments</option>
-                <?php
-                try {
-                    $pdo = new PDO("mysql:host=localhost:3306;dbname=usjr", "root", "root");
-                    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-                    $deptStmt = $pdo->query("SELECT collid, collfullname FROM colleges");
-
-                    while ($deptRow = $deptStmt->fetch(PDO::FETCH_ASSOC)) {
-                        echo "<option value=\"{$deptRow['collid']}\">{$deptRow['collfullname']}</option>";
-                    }
-                } catch (PDOException $e) {
-                    error_log("Database error: " . $e->getMessage());
-                }
-                ?>
-            </select>
-            <button type="submit">Filter</button>
+        <form action="logout.php" method="POST" class="logout-form">
+            <button type="submit" class="logout-btn">Logout</button>
         </form>
+    </header>
 
-        <h2>Student Entries</h2>
-        <table>
-            <thead>
-                <tr>
-                    <th>ID</th>
-                    <th>First Name</th>
-                    <th>Last Name</th>
-                    <th>Middle Name</th>
-                    <th>College</th>
-                    <th>Program</th>
-                    <th>Year</th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                <?php
-                try {
-                    $pdo = new PDO("mysql:host=localhost:3306;dbname=usjr", "root", "root");
-                    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+    <?php if (isset($_SESSION['success'])): ?>
+        <div class="message success"><?php echo htmlspecialchars($_SESSION['success']); unset($_SESSION['success']); ?></div>
+    <?php endif; ?>
 
-                    $sql = "
-                        SELECT s.studid, s.studfirstname, s.studlastname, s.studmidname, c.collfullname, p.progfullname, s.studyear
-                        FROM students s
-                        JOIN colleges c ON s.studcollid = c.collid
-                        JOIN programs p ON s.studprogid = p.progid
-                        $departmentFilter
-                    ";
-                    $stmt = $pdo->prepare($sql);
+    <?php if (isset($_SESSION['error'])): ?>
+        <div class="message error"><?php echo htmlspecialchars($_SESSION['error']); unset($_SESSION['error']); ?></div>
+    <?php endif; ?>
 
-                    if (!empty($departmentFilter)) {
-                        $stmt->bindParam(':department', $_GET['department'], PDO::PARAM_INT);
-                    }
-
-                    $stmt->execute();
-
-                    while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-                        echo "<tr>
-                            <td>{$row['studid']}</td>
-                            <td>{$row['studfirstname']}</td>
-                            <td>{$row['studlastname']}</td>
-                            <td>{$row['studmidname']}</td>
-                            <td>{$row['collfullname']}</td>
-                            <td>{$row['progfullname']}</td>
-                            <td>{$row['studyear']}</td>
-                            <td>
-                                <button class='edit-btn' onclick='editStudent({$row['studid']})'>Edit</button>
-                                <button class='delete-btn' onclick='deleteStudent({$row['studid']})'>Delete</button>
-                            </td>
-                        </tr>";
-                    }
-                } catch (PDOException $e) {
-                    error_log("Database error: " . $e->getMessage());
-                    echo "<tr><td colspan='8'>An error occurred while retrieving student data.</td></tr>";
-                }
-                ?>
-            </tbody>
-        </table>
+    <div class="action-bar">
+        <form action="student.entry.php" method="POST">
+            <button type="submit" class="add-btn">Add New Student</button>
+        </form>
     </div>
 
-    <script src="axios.min.js"></script>
-    <script src="axios.min.js"></script>
-    <script>
-        function showPopupMessage(message, type) {
-            const overlay = document.createElement('div');
-            overlay.className = 'overlay';
-            overlay.innerHTML = `
-                <div class="popup">
-                    <h3>${message}</h3>
-                    <button class="confirm-btn">OK</button>
-                </div>
-            `;
-            document.body.appendChild(overlay);
-            overlay.style.display = 'flex';
+    <!-- Department Filter Form -->
+    <form method="GET" action="">
+        <label for="department">Filter by Department:</label>
+        <select name="department" id="department">
+            <option value="">All Departments</option>
+            <?php
+            try {
+                $pdo = new PDO("mysql:host=localhost:3306;dbname=usjr", "root", "root");
+                $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+                $deptStmt = $pdo->query("SELECT collid, collfullname FROM colleges");
 
-            overlay.querySelector('.confirm-btn').addEventListener('click', () => {
-                document.body.removeChild(overlay);
-                if (type === 'success') {
-                    location.reload();
+                while ($deptRow = $deptStmt->fetch(PDO::FETCH_ASSOC)) {
+                    echo "<option value=\"{$deptRow['collid']}\">{$deptRow['collfullname']}</option>";
                 }
-            });
-        }
+            } catch (PDOException $e) {
+                error_log("Database error: " . $e->getMessage());
+            }
+            ?>
+        </select>
+        <button type="submit">Filter</button>
+    </form>
 
-        function editStudent(id) {
+    <h2>Student Entries</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>First Name</th>
+                <th>Last Name</th>
+                <th>Middle Name</th>
+                <th>College</th>
+                <th>Program</th>
+                <th>Year</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            <?php
+            try {
+                $pdo = new PDO("mysql:host=localhost:3306;dbname=usjr", "root", "root");
+                $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+
+                $sql = "
+                    SELECT s.studid, s.studfirstname, s.studlastname, s.studmidname, c.collfullname, p.progfullname, s.studyear
+                    FROM students s
+                    JOIN colleges c ON s.studcollid = c.collid
+                    JOIN programs p ON s.studprogid = p.progid
+                    $departmentFilter
+                ";
+                $stmt = $pdo->prepare($sql);
+
+                if (!empty($departmentFilter)) {
+                    $stmt->bindParam(':department', $_GET['department'], PDO::PARAM_INT);
+                }
+
+                $stmt->execute();
+
+                while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+                    echo "<tr>
+                        <td>{$row['studid']}</td>
+                        <td>{$row['studfirstname']}</td>
+                        <td>{$row['studlastname']}</td>
+                        <td>{$row['studmidname']}</td>
+                        <td>{$row['collfullname']}</td>
+                        <td>{$row['progfullname']}</td>
+                        <td>{$row['studyear']}</td>
+                        <td>
+                            <button class='edit-btn' onclick='editStudent({$row['studid']})'>Edit</button>
+                            <button class='delete-btn' onclick='deleteStudent({$row['studid']})'>Delete</button>
+                        </td>
+                    </tr>";
+                }
+            } catch (PDOException $e) {
+                error_log("Database error: " . $e->getMessage());
+                echo "<tr><td colspan='8'>An error occurred while retrieving student data.</td></tr>";
+            }
+            ?>
+        </tbody>
+    </table>
+</div>
+
+<script src="axios.min.js"></script>
+<script>
+    function showPopupMessage(message, type) {
+        const overlay = document.createElement('div');
+        overlay.className = 'overlay';
+        overlay.innerHTML = `
+            <div class="popup">
+                <h3>${message}</h3>
+                <button class="confirm-btn">OK</button>
+            </div>
+        `;
+        document.body.appendChild(overlay);
+        overlay.style.display = 'flex';
+
+        overlay.querySelector('.confirm-btn').addEventListener('click', () => {
+            document.body.removeChild(overlay);
+            if (type === 'success') {
+                location.reload();
+            }
+        });
+    }
+
+    function editStudent(id) {
         window.location.href = `student.entry.php?id=${id}`;
     }
 
-        function deleteStudent(id) {
-            const overlay = document.createElement('div');
-            overlay.className = 'overlay';
-            overlay.innerHTML = `
-                <div class="popup">
-                    <h3>Are you sure you want to delete this student?</h3>
-                    <button class="confirm-btn">Yes</button>
-                    <button class="cancel-btn">No</button>
-                </div>
-            `;
-            document.body.appendChild(overlay);
-            overlay.style.display = 'flex';
+    function deleteStudent(id) {
+        const overlay = document.createElement('div');
+        overlay.className = 'overlay';
+        overlay.innerHTML = `
+            <div class="popup">
+                <h3>Are you sure you want to delete this student?</h3>
+                <button class="confirm-btn">Yes</button>
+                <button class="cancel-btn">No</button>
+            </div>
+        `;
+        document.body.appendChild(overlay);
+        overlay.style.display = 'flex';
 
-            overlay.querySelector('.confirm-btn').addEventListener('click', () => {
-                axios.post('deletestudent.php', { id: id })
-                    .then(response => {
-                        if (response.data.success) {
-                            showPopupMessage('Student deleted successfully', 'success');
-                        } else {
-                            showPopupMessage('Failed to delete student: ' + response.data.error, 'error');
-                        }
-                    })
-                    .catch(error => {
-                        console.error('There was an error!', error);
-                        showPopupMessage('An error occurred while deleting the student', 'error');
-                    });
-            });
+        overlay.querySelector('.confirm-btn').addEventListener('click', () => {
+            axios.post('deletestudent.php', { id: id })
+                .then(response => {
+                    if (response.data.success) {
+                        showPopupMessage('Student deleted successfully', 'success');
+                    } else {
+                        showPopupMessage('Failed to delete student: ' + response.data.error, 'error');
+                    }
+                })
+                .catch(error => {
+                    console.error('There was an error!', error);
+                    showPopupMessage('An error occurred while deleting the student', 'error');
+                });
+        });
 
-            overlay.querySelector('.cancel-btn').addEventListener('click', () => {
-                document.body.removeChild(overlay);
-            });
-        }
-    </script>
+        overlay.querySelector('.cancel-btn').addEventListener('click', () => {
+            document.body.removeChild(overlay);
+        });
+    }
+</script>
 </body>
 </html>

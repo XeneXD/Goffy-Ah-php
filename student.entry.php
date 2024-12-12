@@ -93,6 +93,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_student'])) {
             ");
             $stmt->execute([$new_studid, $firstName, $lastName, $middleName, $selectedProgram, $selectedCollege, $yearLevel]);
             $studentId = $new_studid;
+
+            // Redirect to form with the new student ID to display it
+            header("Location: student.entry.php?id=$studentId&new_student=1");
+            exit();
         }
 
         header("Location: home.php");
@@ -184,7 +188,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_student'])) {
 </head>
 <body>
 <div class="form-container">
-    <h2><?= $studentId ? "Edit Student" : "Register Student" ?></h2>
+    <h2><?= isset($_GET['new_student']) ? "New Student Added" : ($studentId ? "Edit Student" : "Register Student") ?></h2>
     <form action="student.entry.php<?= $studentId ? '?id=' . $studentId : '' ?>" method="POST">
         <div class="form-group">
             <label for="student_id">Student ID</label>
