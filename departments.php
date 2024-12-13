@@ -219,6 +219,14 @@ if (!isset($_SESSION['name'])) {
         </form>
     </div>
 
+    <!-- College Dropdown -->
+    <div>
+        <label for="collegeDropdown">Select College:</label>
+        <select id="collegeDropdown" onchange="fetchDepartments()">
+            <option value="">Select a College</option>
+        </select>
+    </div>
+
     <h2>Department List</h2>
     <table>
         <thead>
@@ -228,54 +236,72 @@ if (!isset($_SESSION['name'])) {
                 <th>Actions</th>
             </tr>
         </thead>
-        <tbody>
-            <?php
-            try {
-                $pdo = new PDO("mysql:host=localhost:3306;dbname=usjr", "root", "root");
-                $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-
-                $sql = "SELECT collid, collfullname FROM colleges";
-                $stmt = $pdo->query($sql);
-
-                while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-                    echo "<tr>
-                        <td>{$row['collid']}</td>
-                        <td>{$row['collfullname']}</td>
-                        <td>
-                            <button class='edit-btn' onclick='editDepartment({$row['collid']})'>Edit</button>
-                            <button class='delete-btn' onclick='deleteDepartment({$row['collid']})'>Delete</button>
-                        </td>
-                    </tr>";
-                }
-            } catch (PDOException $e) {
-                error_log("Database error: " . $e->getMessage());
-                echo "<tr><td colspan='3'>An error occurred while retrieving department data.</td></tr>";
-            }
-            ?>
+        <tbody id="department-table-body">
+            <!-- Data will be populated here by JavaScript -->
         </tbody>
     </table>
 </div>
 
-<script src="axios.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
 <script>
-    function showPopupMessage(message, type) {
-        const overlay = document.createElement('div');
-        overlay.className = 'overlay';
-        overlay.innerHTML = `
-            <div class="popup">
-                <h3>${message}</h3>
-                <button class="confirm-btn">OK</button>
-            </div>
-        `;
-        document.body.appendChild(overlay);
-        overlay.style.display = 'flex';
+    document.addEventListener('DOMContentLoaded', function() {
+        fetchColleges();
+    });
 
-        overlay.querySelector('.confirm-btn').addEventListener('click', () => {
-            document.body.removeChild(overlay);
-            if (type === 'success') {
-                location.reload();
-            }
-        });
+    function fetchColleges() {
+        axios.get('fetch_departments.php')
+            .then(function(response) {
+                if (response.data.success) {
+                    const colleges = response.data.colleges;
+                    const collegeDropdown = document.getElementById('collegeDropdown');
+                    collegeDropdown.innerHTML = '<option value="">Select a College</option>';
+                    colleges.forEach(function(college) {
+                        const option = document.createElement('option');
+                        option.value = college.collid;
+                        option.textContent = college.collfullname;
+                        collegeDropdown.appendChild(option);
+                    });
+                } else {
+                    alert('Failed to fetch colleges: ' + response.data.error);
+                }
+            })
+            .catch(function(error) {
+                console.error('There was an error!', error);
+                alert('An error occurred while fetching colleges');
+            });
+    }
+
+    function fetchDepartments() {
+        const collegeId = document.getElementById('collegeDropdown').value;
+        if (!collegeId) return;
+        
+        axios.get('fetch_departments.php', { params: { collid: collegeId } })
+            .then(function(response) {
+                if (response.data.success) {
+                    const departments = response.data.departments;
+                    const tableBody = document.getElementById('department-table-body');
+                    tableBody.innerHTML = '';
+
+                    departments.forEach(function(department) {
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td>${department.deptid}</td>
+                            <td>${department.deptfullname}</td>
+                            <td>
+                                <button class='edit-btn' onclick='editDepartment(${department.deptid})'>Edit</button>
+                                <button class='delete-btn' onclick='deleteDepartment(${department.deptid})'>Delete</button>
+                            </td>
+                        `;
+                        tableBody.appendChild(row);
+                    });
+                } else {
+                    alert('Failed to fetch departments: ' + response.data.error);
+                }
+            })
+            .catch(function(error) {
+                console.error('There was an error!', error);
+                alert('An error occurred while fetching departments');
+            });
     }
 
     function editDepartment(id) {
@@ -296,7 +322,7 @@ if (!isset($_SESSION['name'])) {
         overlay.style.display = 'flex';
 
         overlay.querySelector('.confirm-btn').addEventListener('click', () => {
-            axios.post('deletedepartment.php', { id: id })
+            axios.post('delete_departments.php', { id: id })
                 .then(response => {
                     if (response.data.success) {
                         showPopupMessage('Department deleted successfully', 'success');
