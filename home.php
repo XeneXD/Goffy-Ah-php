@@ -17,7 +17,7 @@ if (isset($_GET['department']) && !empty($_GET['department'])) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard</title>
     <style>
-        body {
+       body {
             font-family: Arial, sans-serif;
             background-color: #f1f1f1;
             margin: 0;
@@ -196,6 +196,7 @@ if (isset($_GET['department']) && !empty($_GET['department'])) {
             color: black;
         }
     </style>
+    </style>
 </head>
 <body>
 <div class="wrapper">
@@ -209,6 +210,7 @@ if (isset($_GET['department']) && !empty($_GET['department'])) {
         </form>
     </header>
 
+    <!-- Messages -->
     <?php if (isset($_SESSION['success'])): ?>
         <div class="message success"><?php echo htmlspecialchars($_SESSION['success']); unset($_SESSION['success']); ?></div>
     <?php endif; ?>
@@ -218,8 +220,11 @@ if (isset($_GET['department']) && !empty($_GET['department'])) {
     <?php endif; ?>
 
     <div class="action-bar">
-        <form action="student.entry.php" method="POST">
+        <form action="student.entry.php" method="POST" style="display: inline;">
             <button type="submit" class="add-btn">Add New Student</button>
+        </form>
+        <form action="departments.php" method="GET" style="display: inline;">
+            <button type="submit" class="add-btn">Department List</button>
         </form>
     </div>
 
