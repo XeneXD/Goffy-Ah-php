@@ -197,7 +197,7 @@ if (!isset($_SESSION['name'])) {
     <header>
         <div>
             <h1 class="header-title">Departments</h1>
-            <p class="user-info">Logged in as: <?php echo htmlspecialchars($_SESSION['name']); ?></p>
+            <p class="user-info">Logged in as: <?php echo htmlspecialchars($_SESSION['name'] ?? ''); ?></p>
         </div>
         <form action="logout.php" method="POST" class="logout-form">
             <button type="submit" class="logout-btn">Logout</button>
