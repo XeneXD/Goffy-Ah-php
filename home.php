@@ -196,7 +196,69 @@ if (isset($_GET['department']) && !empty($_GET['department'])) {
             color: black;
         }
     </style>
-    </style>
+    <script>
+        function filterByDepartment() {
+            var department = document.getElementById("departmentSelect").value;
+            window.location.href = "home.php?department=" + department;
+        }
+
+        function showPopupMessage(message, type) {
+            const overlay = document.createElement('div');
+            overlay.className = 'overlay';
+            overlay.innerHTML = `
+                <div class="popup">
+                    <h3>${message}</h3>
+                    <button class="confirm-btn">OK</button>
+                </div>
+            `;
+            document.body.appendChild(overlay);
+            overlay.style.display = 'flex';
+
+            overlay.querySelector('.confirm-btn').addEventListener('click', () => {
+                document.body.removeChild(overlay);
+                if (type === 'success') {
+                    location.reload();
+                }
+            });
+        }
+
+        function editStudent(id) {
+            window.location.href = `student.entry.php?id=${id}`;
+        }
+
+        function deleteStudent(id) {
+            const overlay = document.createElement('div');
+            overlay.className = 'overlay';
+            overlay.innerHTML = `
+                <div class="popup">
+                    <h3>Are you sure you want to delete this student?</h3>
+                    <button class="confirm-btn">Yes</button>
+                    <button class="cancel-btn">No</button>
+                </div>
+            `;
+            document.body.appendChild(overlay);
+            overlay.style.display = 'flex';
+
+            overlay.querySelector('.confirm-btn').addEventListener('click', () => {
+                axios.post('deletestudent.php', { id: id })
+                    .then(response => {
+                        if (response.data.success) {
+                            showPopupMessage('Student deleted successfully', 'success');
+                        } else {
+                            showPopupMessage('Failed to delete student: ' + response.data.error, 'error');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('There was an error!', error);
+                        showPopupMessage('An error occurred while deleting the student', 'error');
+                    });
+            });
+
+            overlay.querySelector('.cancel-btn').addEventListener('click', () => {
+                document.body.removeChild(overlay);
+            });
+        }
+    </script>
 </head>
 <body>
 <div class="wrapper">
@@ -229,26 +291,24 @@ if (isset($_GET['department']) && !empty($_GET['department'])) {
     </div>
 
     <!-- Department Filter Form -->
-    <form method="GET" action="">
-        <label for="department">Filter by Department:</label>
-        <select name="department" id="department">
-            <option value="">All Departments</option>
-            <?php
-            try {
-                $pdo = new PDO("mysql:host=localhost:3306;dbname=usjr", "root", "root");
-                $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-                $deptStmt = $pdo->query("SELECT collid, collfullname FROM colleges");
+    <label for="departmentSelect">Filter by Department:</label>
+    <select id="departmentSelect" onchange="filterByDepartment()">
+        <option value="">All Departments</option>
+        <?php
+        try {
+            $pdo = new PDO("mysql:host=localhost:3306;dbname=usjr", "root", "root");
+            $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+            $deptStmt = $pdo->query("SELECT collid, collfullname FROM colleges");
 
-                while ($deptRow = $deptStmt->fetch(PDO::FETCH_ASSOC)) {
-                    echo "<option value=\"{$deptRow['collid']}\">{$deptRow['collfullname']}</option>";
-                }
-            } catch (PDOException $e) {
-                error_log("Database error: " . $e->getMessage());
+            while ($deptRow = $deptStmt->fetch(PDO::FETCH_ASSOC)) {
+                $selected = (isset($_GET['department']) && $_GET['department'] == $deptRow['collid']) ? 'selected' : '';
+                echo "<option value=\"{$deptRow['collid']}\" $selected>{$deptRow['collfullname']}</option>";
             }
-            ?>
-        </select>
-        <button type="submit">Filter</button>
-    </form>
+        } catch (PDOException $e) {
+            error_log("Database error: " . $e->getMessage());
+        }
+        ?>
+    </select>
 
     <h2>Student Entries</h2>
     <table>
@@ -310,63 +370,5 @@ if (isset($_GET['department']) && !empty($_GET['department'])) {
 </div>
 
 <script src="axios.min.js"></script>
-<script>
-    function showPopupMessage(message, type) {
-        const overlay = document.createElement('div');
-        overlay.className = 'overlay';
-        overlay.innerHTML = `
-            <div class="popup">
-                <h3>${message}</h3>
-                <button class="confirm-btn">OK</button>
-            </div>
-        `;
-        document.body.appendChild(overlay);
-        overlay.style.display = 'flex';
-
-        overlay.querySelector('.confirm-btn').addEventListener('click', () => {
-            document.body.removeChild(overlay);
-            if (type === 'success') {
-                location.reload();
-            }
-        });
-    }
-
-    function editStudent(id) {
-        window.location.href = `student.entry.php?id=${id}`;
-    }
-
-    function deleteStudent(id) {
-        const overlay = document.createElement('div');
-        overlay.className = 'overlay';
-        overlay.innerHTML = `
-            <div class="popup">
-                <h3>Are you sure you want to delete this student?</h3>
-                <button class="confirm-btn">Yes</button>
-                <button class="cancel-btn">No</button>
-            </div>
-        `;
-        document.body.appendChild(overlay);
-        overlay.style.display = 'flex';
-
-        overlay.querySelector('.confirm-btn').addEventListener('click', () => {
-            axios.post('deletestudent.php', { id: id })
-                .then(response => {
-                    if (response.data.success) {
-                        showPopupMessage('Student deleted successfully', 'success');
-                    } else {
-                        showPopupMessage('Failed to delete student: ' + response.data.error, 'error');
-                    }
-                })
-                .catch(error => {
-                    console.error('There was an error!', error);
-                    showPopupMessage('An error occurred while deleting the student', 'error');
-                });
-        });
-
-        overlay.querySelector('.cancel-btn').addEventListener('click', () => {
-            document.body.removeChild(overlay);
-        });
-    }
-</script>
 </body>
 </html>
