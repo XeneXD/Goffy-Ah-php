@@ -188,7 +188,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_student'])) {
 <body>
 <div class="form-container">
     <h2><?= isset($_GET['new_student']) ? "New Student Added" : ($studentId ? "Edit Student" : "Register Student") ?></h2>
-    <form action="student.entry.php<?= $studentId ? '?id=' . $studentId : '' ?>" method="POST">
+    <form id="studentForm" action="student.entry.php<?= $studentId ? '?id=' . $studentId : '' ?>" method="POST">
         <div class="form-group">
             <label for="student_id">Student ID</label>
             <input type="text" id="student_id" name="student_id" value="<?= htmlspecialchars($studentId ?? '') ?>" readonly>
@@ -247,9 +247,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_student'])) {
 
         <div class="button-group">
             <button type="submit" name="save_student"><?= $studentId ? "Update Student" : "Register" ?></button>
+            <button type="button" id="revertChanges">Revert Changes</button>
             <a href="home.php" class="cancel-btn">Cancel</a>
         </div>
     </form>
 </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const studentForm = document.getElementById('studentForm');
+        const originalData = new FormData(studentForm);
+
+        document.getElementById('revertChanges').addEventListener('click', function(e) {
+            e.preventDefault();
+            for (let [key, value] of originalData.entries()) {
+                if (studentForm.elements[key]) {
+                    studentForm.elements[key].value = value;
+                }
+            }
+        });
+
+        studentForm.addEventListener('submit', function(e) {
+            const currentData = new FormData(studentForm);
+            for (let [key, value] of currentData.entries()) {
+                originalData.set(key, value);
+            }
+        });
+    });
+</script>
 </body>
 </html>
