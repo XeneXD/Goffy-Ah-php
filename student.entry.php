@@ -92,10 +92,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_student'])) {
                 VALUES (?, ?, ?, ?, ?, ?, ?)
             ");
             $stmt->execute([$new_studid, $firstName, $lastName, $middleName, $selectedProgram, $selectedCollege, $yearLevel]);
-            $studentId = $new_studid;
 
-            // Redirect to form with the new student ID to display it
-            header("Location: student.entry.php?id=$studentId&new_student=1");
+            // Redirect to home page after adding a new student
+            header("Location: home.php");
             exit();
         }
 
