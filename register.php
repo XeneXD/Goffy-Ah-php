@@ -79,6 +79,43 @@
         .login-link a:hover {
             text-decoration: underline;
         }
+        /* Modal styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgb(0,0,0);
+            background-color: rgba(0,0,0,0.4);
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-content {
+            background-color: #fefefe;
+            margin: auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+            max-width: 400px;
+            text-align: center;
+            border-radius: 12px;
+        }
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+        }
+        .close:hover,
+        .close:focus {
+            color: black;
+            text-decoration: none;
+            cursor: pointer;
+        }
     </style>
 </head>
 <body>
@@ -87,7 +124,7 @@
         <form action="" method="post">
             <div class="input-group">
                 <label for="user">Username</label>
-                <input type="text" name="user" id="user" required>
+                <input type="text" name="user" id="user" value="<?php if(isset($_POST['user'])) echo htmlspecialchars($_POST['user']); ?>" required>
             </div>
             <div class="input-group">
                 <label for="pass">Password</label>
@@ -106,34 +143,80 @@
             Already have an account? <a href="login.php">Sign in here</a>
         </div>
     </div>
+
+    <!-- Modal structure -->
+    <div id="myModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <p id="modal-message"></p>
+        </div>
+    </div>
+
+    <script>
+        // Get the modal
+        var modal = document.getElementById("myModal");
+        var modalMessage = document.getElementById("modal-message");
+
+        // Get the <span> element that closes the modal
+        var span = document.getElementsByClassName("close")[0];
+
+        // When the user clicks on <span> (x), close the modal
+        span.onclick = function() {
+            modal.style.display = "none";
+        }
+
+        // When the user clicks anywhere outside of the modal, close it
+        window.onclick = function(event) {
+            if (event.target == modal) {
+                modal.style.display = "none";
+            }
+        }
+
+        // Function to show modal with message
+        function showModal(message) {
+            modalMessage.innerText = message;
+            modal.style.display = "flex";
+        }
+    </script>
+
+    <?php
+        if (isset($_POST['reg'])) {
+            $user = $_POST['user'];
+            $pass = $_POST['pass'];
+            $verify = $_POST['verify'];
+
+            try {
+                $pdo = new PDO("mysql:host=localhost:3306;dbname=usjr", "root", "root");
+                $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+            } catch (PDOException $e) {
+                echo "<script>showModal('Connection Failed: " . $e->getMessage() . "');</script>";
+                exit();
+            }
+
+            // Check if the username already exists
+            $stmt = $pdo->prepare("SELECT COUNT(*) FROM appusers WHERE username = ?");
+            $stmt->execute([$user]);
+            $userExists = $stmt->fetchColumn();
+
+            if ($userExists) {
+                echo "<script>showModal('Username already exists. Please choose another.');</script>";
+            } elseif ($pass != $verify) {
+                echo "<script>showModal('Passwords do not match.');</script>";
+            } else {
+                $sql = "INSERT INTO appusers (username, password) VALUES (?, ?)";
+                $insertPreparedStatement = $pdo->prepare($sql);
+                $password = password_hash($pass, PASSWORD_DEFAULT);
+                $insertPreparedStatement->bindParam(1, $user, PDO::PARAM_STR);
+                $insertPreparedStatement->bindParam(2, $password, PDO::PARAM_STR);
+
+                $result = $insertPreparedStatement->execute();
+                if ($result) {
+                    echo "<script>showModal('Registration successful!');</script>";
+                } else {
+                    echo "<script>showModal('Registration failed. Please try again.');</script>";
+                }
+            }
+        }
+    ?>
 </body>
 </html>
-
-<?php
-    if (isset($_POST['reg'])) {
-        $user = $_POST['user'];
-        $pass = $_POST['pass'];
-        $verify = $_POST['verify'];
-
-        if ($pass == $verify) {
-            echo "Valid Password has been implemented";
-        } else {
-            echo "Password Not Match";
-        }
-
-        try {
-            $pdo = new PDO("mysql:host=localhost:3306;dbname=usjr", "root", "root");
-            $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-        } catch (PDOException $e) {
-            echo "Connection Failed: " . $e->getMessage();
-        }
-
-        $sql = "INSERT INTO appusers VALUES (null, ?, ?)";
-        $insertPreparedStatement = $pdo->prepare($sql);
-        $password = password_hash($pass, PASSWORD_DEFAULT);
-        $insertPreparedStatement->bindParam(1, $user, PDO::PARAM_STR);
-        $insertPreparedStatement->bindParam(2, $password, PDO::PARAM_STR);
-
-        $result = $insertPreparedStatement->execute();
-    }
-?>
