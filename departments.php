@@ -217,9 +217,7 @@ if (!isset($_SESSION['name'])) {
     </header>
 
     <div class="action-bar">
-        <form action="department.entry.php" method="POST">
-            <button type="submit" class="btn add-btn">Add New Department</button>
-        </form>
+        <a href="department.entry.php" class="btn add-btn">Add New Department</a>
         <a href="Dashboard.php" class="btn back-btn">Back to Dashboard</a>
     </div>
 

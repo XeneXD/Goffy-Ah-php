@@ -43,29 +43,38 @@ if (isset($_GET['id'])) {
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $deptid = $_POST['deptid'] ?? '';
-    $deptfullname = $_POST['deptfullname'] ?? '';
-    $deptshortname = $_POST['deptshortname'] ?? '';
-    $deptcollid = $_POST['deptcollid'] ?? '';
+    $deptid = $_POST['deptid'] ?? null;
+    $deptfullname = $_POST['deptfullname'];
+    $deptshortname = $_POST['deptshortname'];
+    $deptcollid = $_POST['deptcollid'];
 
-    if ($deptid && $deptfullname && $deptshortname && $deptcollid) {
-        try {
-            if (isset($_GET['id'])) {
-                $stmt = $pdo->prepare("UPDATE departments SET deptfullname = ?, deptshortname = ?, deptcollid = ? WHERE deptid = ?");
-                $stmt->execute([$deptfullname, $deptshortname, $deptcollid, $deptid]);
-                $_SESSION['success'] = "Department updated successfully";
-            } else {
-                $stmt = $pdo->prepare("INSERT INTO departments (deptid, deptfullname, deptshortname, deptcollid) VALUES (?, ?, ?, ?)");
-                $stmt->execute([$deptid, $deptfullname, $deptshortname, $deptcollid]);
-                $_SESSION['success'] = "Department added successfully";
-            }
-            header("Location: departments.php");
-            exit();
-        } catch (PDOException $e) {
-            $_SESSION['error'] = "Error: " . htmlspecialchars($e->getMessage());
+    try {
+        $pdo = new PDO("mysql:host=localhost:3306;dbname=usjr", "root", "root");
+        $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+
+        if ($deptid) {
+            $stmt = $pdo->prepare("
+                UPDATE departments
+                SET deptfullname = ?, deptshortname = ?, deptcollid = ?
+                WHERE deptid = ?
+            ");
+            $stmt->execute([$deptfullname, $deptshortname, $deptcollid, $deptid]);
+        } else {
+            $stmt = $pdo->query("SELECT IFNULL(MAX(deptid), 0) AS max_deptid FROM departments");
+            $new_deptid = $stmt->fetch(PDO::FETCH_ASSOC)['max_deptid'] + 1;
+
+            $stmt = $pdo->prepare("
+                INSERT INTO departments (deptid, deptfullname, deptshortname, deptcollid)
+                VALUES (?, ?, ?, ?)
+            ");
+            $stmt->execute([$new_deptid, $deptfullname, $deptshortname, $deptcollid]);
         }
-    } else {
-        $_SESSION['error'] = "All fields are required.";
+
+        $_SESSION['success'] = "Department saved successfully!";
+        header("Location: departments.php");
+        exit();
+    } catch (PDOException $e) {
+        $_SESSION['error'] = "Error: " . htmlspecialchars($e->getMessage());
     }
 }
 ?>
@@ -173,7 +182,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             cursor: pointer;
         }
         .popup .confirm-btn {
-            background-color: #d9534f;
+            background-color: #4caf50;
             color: white;
         }
     </style>
@@ -225,59 +234,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </script>
 <?php endif; ?>
 
+<script src="axios.min.js"></script>
 <script>
-     document.getElementById('departmentForm').addEventListener('submit', async function(event) {
+    document.getElementById('departmentForm').addEventListener('submit', async function(event) {
         event.preventDefault(); 
 
-        const deptid = document.getElementById('deptid').value;
-        const deptfullname = document.getElementById('deptfullname').value;
-        const deptshortname = document.getElementById('deptshortname').value;
-        const deptcollid = document.getElementById('deptcollid').value;
-
-        let errorMessage = '';
-
-        if (!deptid) {
-            errorMessage += 'Department ID is required.\n';
-        } else if (isNaN(deptid)) {
-            errorMessage += 'Department ID must be a number.\n';
-        }
-
-        if (!deptfullname) {
-            errorMessage += 'Department Full Name is required.\n';
-        }
-
-        if (!deptshortname) {
-            errorMessage += 'Department Short Name is required.\n';
-        }
-
-        if (!deptcollid) {
-            errorMessage += 'College ID is required.\n';
-        }
-
-        if (errorMessage) {
-            alert(errorMessage);
-            return;
-        }
-
-        const formData = new FormData();
-        formData.append('deptid', deptid);
-        formData.append('deptfullname', deptfullname);
-        formData.append('deptshortname', deptshortname);
-        formData.append('deptcollid', deptcollid);
+        const formData = new FormData(this);
 
         try {
-            const response = await axios.post('department.entry.php', formData);
+            const response = await axios.post('save.departments.php', formData);
             if (response.data.success) {
-                alert('Department information saved successfully!');
-                window.location.href = 'departments.php'; 
+                window.location.href = 'departments.php';
             } else {
-                alert('Error: ' + (response.data.error || 'Unknown error occurred.'));
+                document.getElementById('errorPopup').style.display = 'flex';
+                document.querySelector('#errorPopup h3').textContent = response.data.error || 'Unknown error occurred.';
             }
         } catch (error) {
-            alert('An error occurred while saving. Please try again.');
+            document.getElementById('errorPopup').style.display = 'flex';
+            document.querySelector('#errorPopup h3').textContent = 'An error occurred while saving. Please try again.';
             console.error(error);
         }
     });
+
+    function closePopup() {
+        document.getElementById('errorPopup').style.display = 'none';
+    }
 </script>
 </body>
 </html>

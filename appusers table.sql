@@ -9,6 +9,7 @@ CREATE TABLE `usjr`.`appusers` (
 );
 select * from `usjr`.`appusers`;
 select * from `usjr`.`students`;
+select * from `usjr`.`departments`;
 
 drop table `usjr`.`appusers`;
 ALTER TABLE `usjr`.`appusers` MODIFY password VARCHAR(255);
