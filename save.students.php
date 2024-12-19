@@ -7,13 +7,18 @@ if (!isset($_SESSION['name'])) {
     exit();
 }
 
-$firstName = $_POST['first_name'];
-$lastName = $_POST['last_name'];
-$middleName = $_POST['middle_name'];
+$firstName = $_POST['first_name'] ?? null;
+$lastName = $_POST['last_name'] ?? null;
+$middleName = $_POST['middle_name'] ?? null;
 $yearLevel = $_POST['year_level'] ?? ''; 
-$selectedCollege = $_POST['college_id'];
-$selectedProgram = $_POST['program_id'];
+$selectedCollege = $_POST['college_id'] ?? null;
+$selectedProgram = $_POST['program_id'] ?? null;
 $studentId = $_POST['student_id'] ?? null;
+
+if (!$firstName || !$lastName || !$selectedCollege || !$selectedProgram) {
+    echo json_encode(['success' => false, 'error' => 'Required fields are missing']);
+    exit();
+}
 
 try {
     $pdo = new PDO("mysql:host=localhost:3306;dbname=usjr", "root", "root");

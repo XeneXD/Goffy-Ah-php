@@ -51,8 +51,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['college_id']) && !iss
     $firstName = $_POST['first_name'];
     $lastName = $_POST['last_name'];
     $middleName = $_POST['middle_name'];
-    $yearLevel = $_POST['year_level'] ?? ''; // Ensure yearLevel is defined
-    $selectedProgram = ''; // Reset program selection
+    $yearLevel = $_POST['year_level'] ?? ''; 
+    $selectedProgram = ''; 
 
     try {
         $pdo = new PDO("mysql:host=localhost:3306;dbname=usjr", "root", "root");
@@ -68,37 +68,66 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_student'])) {
     $firstName = $_POST['first_name'];
     $lastName = $_POST['last_name'];
     $middleName = $_POST['middle_name'];
-    $yearLevel = $_POST['year_level'] ?? ''; // Ensure yearLevel is defined
+    $yearLevel = $_POST['year_level'] ?? ''; 
     $selectedCollege = $_POST['college_id'];
     $selectedProgram = $_POST['program_id'];
 
-    try {
-        $pdo = new PDO("mysql:host=localhost:3306;dbname=usjr", "root", "root");
-        $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+    $errorMessage = '';
 
-        if ($studentId) {
-            $stmt = $pdo->prepare("
-                UPDATE students
-                SET studfirstname = ?, studlastname = ?, studmidname = ?, studprogid = ?, studcollid = ?, studyear = ?
-                WHERE studid = ?
-            ");
-            $stmt->execute([$firstName, $lastName, $middleName, $selectedProgram, $selectedCollege, $yearLevel, $studentId]);
-        } else {
-            $stmt = $pdo->query("SELECT IFNULL(MAX(studid), 0) AS max_studid FROM students");
-            $new_studid = $stmt->fetch(PDO::FETCH_ASSOC)['max_studid'] + 1;
+    if (!empty($firstName) && preg_match('/\d/', $firstName)) {
+        $errorMessage .= 'First Name cannot contain numbers.\n';
+    }
 
-            $stmt = $pdo->prepare("
-                INSERT INTO students (studid, studfirstname, studlastname, studmidname, studprogid, studcollid, studyear)
-                VALUES (?, ?, ?, ?, ?, ?, ?)
-            ");
-            $stmt->execute([$new_studid, $firstName, $lastName, $middleName, $selectedProgram, $selectedCollege, $yearLevel]);
+    if (!empty($lastName) && preg_match('/\d/', $lastName)) {
+        $errorMessage .= 'Last Name cannot contain numbers.\n';
+    }
+
+    if (!empty($middleName) && preg_match('/\d/', $middleName)) {
+        $errorMessage .= 'Middle Name cannot contain numbers.\n';
+    }
+
+    if (!empty($yearLevel) && $yearLevel < 0) {
+        $errorMessage .= 'Year Level cannot be negative.\n';
+    }
+
+    if (empty($selectedCollege)) {
+        $errorMessage .= 'College is required.\n';
+    }
+
+    if (empty($selectedProgram)) {
+        $errorMessage .= 'Program is required.\n';
+    }
+
+    if ($errorMessage) {
+        echo "<script>showPopup('Validation Error', '$errorMessage');</script>";
+    } else {
+        try {
+            $pdo = new PDO("mysql:host=localhost:3306;dbname=usjr", "root", "root");
+            $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+
+            if ($studentId) {
+                $stmt = $pdo->prepare("
+                    UPDATE students
+                    SET studfirstname = ?, studlastname = ?, studmidname = ?, studprogid = ?, studcollid = ?, studyear = ?
+                    WHERE studid = ?
+                ");
+                $stmt->execute([$firstName, $lastName, $middleName, $selectedProgram, $selectedCollege, $yearLevel, $studentId]);
+            } else {
+                $stmt = $pdo->query("SELECT IFNULL(MAX(studid), 0) AS max_studid FROM students");
+                $new_studid = $stmt->fetch(PDO::FETCH_ASSOC)['max_studid'] + 1;
+
+                $stmt = $pdo->prepare("
+                    INSERT INTO students (studid, studfirstname, studlastname, studmidname, studprogid, studcollid, studyear)
+                    VALUES (?, ?, ?, ?, ?, ?, ?)
+                ");
+                $stmt->execute([$new_studid, $firstName, $lastName, $middleName, $selectedProgram, $selectedCollege, $yearLevel]);
+            }
+
+            header("Location: students.php");
+            exit();
+        } catch (PDOException $e) {
+            echo "<p>Error saving student data: " . htmlspecialchars($e->getMessage()) . "</p>";
         }
-
-        // Redirect to home page after saving the student
-        header("Location: students.php");
-        exit();
-    } catch (PDOException $e) {
-        echo "<p>Error saving student data: " . htmlspecialchars($e->getMessage()) . "</p>";
     }
 }
 ?>
@@ -224,12 +253,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_student'])) {
         </div>
         <div class="form-group">
             <label for="first_name">First Name</label>
-            <input type="text" id="first_name" name="first_name" value="<?= htmlspecialchars($firstName) ?>" placeholder="Enter first name" required autocomplete="given-name">
+            <input type="text" id="first_name" name="first_name" value="<?= htmlspecialchars($firstName) ?>" placeholder="Enter first name" autocomplete="given-name">
         </div>
 
         <div class="form-group">
             <label for="last_name">Last Name</label>
-            <input type="text" id="last_name" name="last_name" value="<?= htmlspecialchars($lastName) ?>" placeholder="Enter last name" required autocomplete="family-name">
+            <input type="text" id="last_name" name="last_name" value="<?= htmlspecialchars($lastName) ?>" placeholder="Enter last name" autocomplete="family-name">
         </div>
 
         <div class="form-group">
@@ -239,7 +268,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_student'])) {
 
         <div class="form-group">
             <label for="college_id">College</label>
-            <select id="college_id" name="college_id" required autocomplete="organization">
+            <select id="college_id" name="college_id" autocomplete="organization">
                 <option value="" disabled <?= empty($selectedCollege) ? 'selected' : '' ?>>Select college</option>
                 <?php
                 try {
@@ -258,7 +287,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_student'])) {
 
         <div class="form-group">
             <label for="program_id">Program</label>
-            <select id="program_id" name="program_id" required autocomplete="organization">
+            <select id="program_id" name="program_id" autocomplete="organization">
                 <option value="" selected disabled>Select a program</option>
                 <?php
                 foreach ($programs as $program) {
@@ -271,7 +300,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_student'])) {
 
         <div class="form-group">
             <label for="year_level">Year Level</label>
-            <input type="number" id="year_level" name="year_level" value="<?= htmlspecialchars($yearLevel ?? '') ?>" min="1" max="5" placeholder="Enter year level" required autocomplete="off">
+            <input type="number" id="year_level" name="year_level" value="<?= htmlspecialchars($yearLevel ?? '') ?>" placeholder="Enter year level" autocomplete="off">
         </div>
 
         <div class="button-group">
@@ -293,7 +322,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_student'])) {
     </div>
 </div>
 
-<script src="axios.min.js"></script>
+<div class="overlay" id="errorPopup">
+    <div class="popup">
+        <h3>Validation Error</h3>
+        <p id="errorMessage"></p>
+        <button class="confirm-btn" onclick="closeErrorPopup()">OK</button>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
 <script>
   document.addEventListener('DOMContentLoaded', function() {
     const studentForm = document.getElementById('studentForm');
@@ -323,8 +360,48 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_student'])) {
 
     studentForm.addEventListener('submit', function(e) {
         e.preventDefault();
-        const formData = new FormData(this);
 
+        const firstName = document.getElementById('first_name').value;
+        const lastName = document.getElementById('last_name').value;
+        const middleName = document.getElementById('middle_name').value;
+        const yearLevel = document.getElementById('year_level').value;
+        const selectedCollege = document.getElementById('college_id').value;
+        const selectedProgram = document.getElementById('program_id').value;
+
+        let errorMessage = '';
+
+        if (firstName && /\d/.test(firstName)) {
+            errorMessage += 'First Name cannot contain numbers.\n';
+        }
+
+        if (lastName && /\d/.test(lastName)) {
+            errorMessage += 'Last Name cannot contain numbers.\n';
+        }
+
+        if (middleName && /\d/.test(middleName)) {
+            errorMessage += 'Middle Name cannot contain numbers.\n';
+        }
+
+        if (yearLevel && yearLevel < 0) {
+            errorMessage += 'Year Level cannot be negative.\n';
+        }
+
+        if (!selectedCollege) {
+            errorMessage += 'College is required.\n';
+        }
+
+        if (!selectedProgram) {
+            errorMessage += 'Program is required.\n';
+        }
+
+        if (errorMessage) {
+            document.getElementById('errorMessage').innerText = errorMessage;
+            document.getElementById('errorPopup').style.display = 'flex';
+            return;
+        }
+
+        const formData = new FormData(this);
+        
         axios.post('save.students.php', formData)
             .then(response => {
                 if (response.data.success) {
@@ -345,7 +422,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_student'])) {
     });
 
     function fetchPrograms(collegeId, selectedProgram = '') {
-        axios.post('fetch_programs.php', { college_id: collegeId })
+        axios.get('fetch_programs.php', { params: { collid: collegeId } })
             .then(response => {
                 const programSelect = document.getElementById('program_id');
                 programSelect.innerHTML = '<option value="" selected disabled>Select a program</option>';
@@ -368,6 +445,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_student'])) {
 function closePopup() {
     document.getElementById('successPopup').style.display = 'none';
     window.location.href = 'students.php';
+}
+
+function closeErrorPopup() {
+    document.getElementById('errorPopup').style.display = 'none';
 }
 </script>
 </body>

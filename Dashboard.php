@@ -45,7 +45,7 @@ if (!isset($_SESSION['name'])) {
         }
 
         .banner:hover {
-            height: 40vh; 
+            height: 10vh; 
             justify-content: space-between;
         }
 
@@ -103,7 +103,8 @@ if (!isset($_SESSION['name'])) {
 
         .content {
             text-align: center;
-            margin-top: 150px; /* Adjusted to account for the banner height */
+            margin-top: 150px; 
+            padding-top: 150px; 
             transition: opacity 0.6s ease-in-out;
         }
 
@@ -115,6 +116,7 @@ if (!isset($_SESSION['name'])) {
             display: flex;
             justify-content: center;
             gap: 20px;
+            flex-wrap: wrap;
         }
 
         .button-container {
@@ -122,6 +124,11 @@ if (!isset($_SESSION['name'])) {
             border-radius: 10px;
             animation: float 3s ease-in-out infinite;
             transition: animation 0.3s ease;
+            width: 200px;
+            height: 200px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
         }
 
         .button-container:hover {
@@ -135,6 +142,16 @@ if (!isset($_SESSION['name'])) {
 
         .button-container.departments {
             background: url('assets/departments-background.jpg') no-repeat center center;
+            background-size: cover;
+        }
+
+        .button-container.programs {
+            background: url('assets/programs-background.jpg') no-repeat center center;
+            background-size: cover;
+        }
+
+        .button-container.colleges {
+            background: url('assets/colleges-background.jpg') no-repeat center center;
             background-size: cover;
         }
 
@@ -157,7 +174,7 @@ if (!isset($_SESSION['name'])) {
         .chart-container {
             width: 50%;
             margin: 50px auto;
-            background-color: white;
+            background-color: rgba(255, 255, 255, 0.8); 
             padding: 20px;
             border-radius: 10px;
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
@@ -195,6 +212,12 @@ if (!isset($_SESSION['name'])) {
             <div class="button-container departments">
                 <a href="departments.php">Departments</a>
             </div>
+            <div class="button-container programs">
+                <a href="programs.php">Programs</a>
+            </div>
+            <div class="button-container colleges">
+                <a href="colleges.php">Colleges</a>
+            </div>
         </div>
         <div class="chart-container">
             <canvas id="dashboardChart"></canvas>
@@ -202,36 +225,53 @@ if (!isset($_SESSION['name'])) {
     </div>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            axios.get('fetch_students.php')
-                .then(response => {
-                    const data = response.data.students;
-                    const ctx = document.getElementById('dashboardChart').getContext('2d');
-                    const chartData = {
-                        labels: data.map(item => item.collfullname),
-                        datasets: [{
-                            data: data.map(item => item.student_count),
-                            backgroundColor: ['#0275d8', '#5bc0de', '#5cb85c', '#f0ad4e', '#d9534f'],
-                            hoverBackgroundColor: ['#025aa5', '#31b0d5', '#4cae4c', '#ec971f', '#c9302c']
-                        }]
-                    };
-                    const options = {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: {
-                                position: 'bottom'
+            const ctx = document.getElementById('dashboardChart').getContext('2d');
+            let dashboardChart;
+
+            function fetchChartData() {
+                axios.get('fetch_students.php')
+                    .then(response => {
+                        const data = response.data.students;
+                        const chartData = {
+                            labels: data.map(item => item.collfullname),
+                            datasets: [{
+                                data: data.map(item => item.student_count),
+                                backgroundColor: ['#0275d8', '#5bc0de', '#5cb85c', '#f0ad4e', '#d9534f'],
+                                hoverBackgroundColor: ['#025aa5', '#31b0d5', '#4cae4c', '#ec971f', '#c9302c']
+                            }]
+                        };
+                        const options = {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: {
+                                    position: 'bottom'
+                                },
+                                title: {
+                                    display: true,
+                                    text: 'Number of Students in Each College'
+                                }
                             }
+                        };
+
+                        if (dashboardChart) {
+                            dashboardChart.destroy();
                         }
-                    };
-                    new Chart(ctx, {
-                        type: 'pie',
-                        data: chartData,
-                        options: options
+
+                        dashboardChart = new Chart(ctx, {
+                            type: 'pie',
+                            data: chartData,
+                            options: options
+                        });
+                    })
+                    .catch(error => {
+                        console.error('Error fetching data:', error);
                     });
-                })
-                .catch(error => {
-                    console.error('Error fetching data:', error);
-                });
+            }
+
+            fetchChartData();
+
+            window.addEventListener('focus', fetchChartData);
         });
     </script>
 </body>

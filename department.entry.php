@@ -43,38 +43,66 @@ if (isset($_GET['id'])) {
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $deptid = $_POST['deptid'] ?? null;
+    $deptid = $_POST['deptid'];
     $deptfullname = $_POST['deptfullname'];
     $deptshortname = $_POST['deptshortname'];
     $deptcollid = $_POST['deptcollid'];
 
-    try {
-        $pdo = new PDO("mysql:host=localhost:3306;dbname=usjr", "root", "root");
-        $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+    $errorMessage = '';
 
-        if ($deptid) {
-            $stmt = $pdo->prepare("
-                UPDATE departments
-                SET deptfullname = ?, deptshortname = ?, deptcollid = ?
-                WHERE deptid = ?
-            ");
-            $stmt->execute([$deptfullname, $deptshortname, $deptcollid, $deptid]);
-        } else {
-            $stmt = $pdo->query("SELECT IFNULL(MAX(deptid), 0) AS max_deptid FROM departments");
-            $new_deptid = $stmt->fetch(PDO::FETCH_ASSOC)['max_deptid'] + 1;
+    if (empty($deptid) || $deptid < 0) {
+        $errorMessage .= 'Department ID is required and must be a non-negative number.\n';
+    }
+    if (empty($deptfullname)) {
+        $errorMessage .= 'Department Full Name is required.\n';
+    }
+    if (empty($deptshortname)) {
+        $errorMessage .= 'Department Short Name is required.\n';
+    }
+    if (empty($deptcollid)) {
+        $errorMessage .= 'College is required.\n';
+    }
 
-            $stmt = $pdo->prepare("
-                INSERT INTO departments (deptid, deptfullname, deptshortname, deptcollid)
-                VALUES (?, ?, ?, ?)
-            ");
-            $stmt->execute([$new_deptid, $deptfullname, $deptshortname, $deptcollid]);
+    if ($errorMessage) {
+        echo "<script>showPopup('Validation Error', '$errorMessage');</script>";
+    } else {
+        try {
+            $pdo = new PDO("mysql:host=localhost:3306;dbname=usjr", "root", "root");
+            $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+
+            
+            $stmt = $pdo->prepare("SELECT COUNT(*) FROM departments WHERE deptfullname = ? AND deptid != ?");
+            $stmt->execute([$deptfullname, $deptid]);
+            $count = $stmt->fetchColumn();
+
+            if ($count > 0) {
+                echo "<script>showPopup('Error', 'Department name already exists.');</script>";
+            } else {
+                if (isset($_POST['original_deptid']) && !empty($_POST['original_deptid'])) {
+                    $original_deptid = $_POST['original_deptid'];
+                    $stmt = $pdo->prepare("
+                        UPDATE departments
+                        SET deptfullname = ?, deptshortname = ?, deptcollid = ?
+                        WHERE deptid = ?
+                    ");
+                    $stmt->execute([$deptfullname, $deptshortname, $deptcollid, $original_deptid]);
+                } else {
+                    $stmt = $pdo->prepare("
+                        INSERT INTO departments (deptid, deptfullname, deptshortname, deptcollid)
+                        VALUES (?, ?, ?, ?)
+                    ");
+                    $stmt->execute([$deptid, $deptfullname, $deptshortname, $deptcollid]);
+                }
+
+                $_SESSION['success'] = "Department saved successfully!";
+                header("Location: departments.php");
+                exit();
+            }
+        } catch (PDOException $e) {
+            $_SESSION['error'] = "Error: " . htmlspecialchars($e->getMessage());
+            header("Location: departments.php");
+            exit();
         }
-
-        $_SESSION['success'] = "Department saved successfully!";
-        header("Location: departments.php");
-        exit();
-    } catch (PDOException $e) {
-        $_SESSION['error'] = "Error: " . htmlspecialchars($e->getMessage());
     }
 }
 ?>
@@ -186,26 +214,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             color: white;
         }
     </style>
+    <script src="axios.min.js"></script>
 </head>
 <body>
 <div class="form-container">
     <h2><?= isset($_GET['id']) ? 'Edit Department' : 'Add New Department' ?></h2>
-    <form id="departmentForm" action="department.entry.php<?= isset($_GET['id']) ? '?id=' . $_GET['id'] : '' ?>" method="POST">
+    <form id="departmentForm" action="save.departments.php" method="POST">
         <div class="form-group">
             <label for="deptid">Department ID</label>
-            <input type="number" id="deptid" name="deptid" value="<?= htmlspecialchars($deptid ?? '') ?>" placeholder="Enter department ID" required>
+            <input type="number" id="deptid" name="deptid" value="<?= htmlspecialchars($deptid ?? '') ?>" placeholder="Enter department ID" min="0">
+            <input type="hidden" id="original_deptid" name="original_deptid" value="<?= htmlspecialchars($deptid ?? '') ?>">
         </div>
         <div class="form-group">
             <label for="deptfullname">Department Full Name</label>
-            <input type="text" id="deptfullname" name="deptfullname" value="<?= htmlspecialchars($deptfullname ?? '') ?>" placeholder="Enter department full name" required>
+            <input type="text" id="deptfullname" name="deptfullname" value="<?= htmlspecialchars($deptfullname ?? '') ?>" placeholder="Enter department full name">
         </div>
         <div class="form-group">
             <label for="deptshortname">Department Short Name</label>
-            <input type="text" id="deptshortname" name="deptshortname" value="<?= htmlspecialchars($deptshortname ?? '') ?>" placeholder="Enter department short name" required>
+            <input type="text" id="deptshortname" name="deptshortname" value="<?= htmlspecialchars($deptshortname ?? '') ?>" placeholder="Enter department short name">
         </div>
         <div class="form-group">
             <label for="deptcollid">College</label>
-            <select id="deptcollid" name="deptcollid" required>
+            <select id="deptcollid" name="deptcollid">
                 <option value="" disabled <?= empty($deptcollid) ? 'selected' : '' ?>>Select college</option>
                 <?php foreach ($colleges as $college): ?>
                     <option value="<?= $college['collid'] ?>" <?= $college['collid'] == $deptcollid ? 'selected' : '' ?>><?= htmlspecialchars($college['collfullname'] ?? '') ?></option>
@@ -219,46 +249,78 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </form>
 </div>
 
-<?php if (isset($_SESSION['error'])): ?>
-    <div class="overlay" id="errorPopup">
-        <div class="popup">
-            <h3><?php echo htmlspecialchars($_SESSION['error']); unset($_SESSION['error']); ?></h3>
-            <button class="confirm-btn" onclick="closePopup()">OK</button>
-        </div>
+<div class="overlay" id="overlay">
+    <div class="popup" id="popup">
+        <h3 id="popupTitle"></h3>
+        <p id="popupMessage"></p>
+        <button class="confirm-btn" id="popupButton">OK</button>
     </div>
-    <script>
-        document.getElementById('errorPopup').style.display = 'flex';
-        function closePopup() {
-            document.getElementById('errorPopup').style.display = 'none';
-        }
-    </script>
-<?php endif; ?>
+</div>
 
-<script src="axios.min.js"></script>
 <script>
+    function showPopup(title, message) {
+        document.getElementById('popupTitle').innerText = title;
+        document.getElementById('popupMessage').innerText = message;
+        document.getElementById('overlay').style.display = 'flex';
+    }
+
+    document.getElementById('popupButton').addEventListener('click', function() {
+        document.getElementById('overlay').style.display = 'none';
+    });
+
     document.getElementById('departmentForm').addEventListener('submit', async function(event) {
         event.preventDefault(); 
 
-        const formData = new FormData(this);
+        const deptid = document.getElementById('deptid').value;
+        const deptfullname = document.getElementById('deptfullname').value;
+        const deptshortname = document.getElementById('deptshortname').value;
+        const deptcollid = document.getElementById('deptcollid').value;
+        const original_deptid = document.getElementById('original_deptid').value;
+
+        let errorMessage = '';
+
+        if (!deptid || deptid < 0) {
+            errorMessage += 'Department ID is required and must be a non-negative number.\n';
+        }
+
+        if (!deptfullname) {
+            errorMessage += 'Department Full Name is required.\n';
+        }
+
+        if (!deptshortname) {
+            errorMessage += 'Department Short Name is required.\n';
+        }
+
+        if (!deptcollid) {
+            errorMessage += 'College ID is required.\n';
+        }
+
+        if (errorMessage) {
+            showPopup('Validation Error', errorMessage);
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('deptid', deptid);
+        formData.append('deptfullname', deptfullname);
+        formData.append('deptshortname', deptshortname);
+        formData.append('deptcollid', deptcollid);
+        formData.append('original_deptid', original_deptid);
 
         try {
             const response = await axios.post('save.departments.php', formData);
             if (response.data.success) {
-                window.location.href = 'departments.php';
+                showPopup('Success', 'Department information saved successfully!');
+                document.getElementById('popupButton').addEventListener('click', function() {
+                    window.location.href = 'departments.php';
+                }, { once: true });
             } else {
-                document.getElementById('errorPopup').style.display = 'flex';
-                document.querySelector('#errorPopup h3').textContent = response.data.error || 'Unknown error occurred.';
+                showPopup('Error', 'Error: ' + (response.data.error || 'Unknown error occurred.'));
             }
         } catch (error) {
-            document.getElementById('errorPopup').style.display = 'flex';
-            document.querySelector('#errorPopup h3').textContent = 'An error occurred while saving. Please try again.';
-            console.error(error);
+            showPopup('Error', 'Error: ' + (error.response.data.error || 'Unknown error occurred.'));
         }
     });
-
-    function closePopup() {
-        document.getElementById('errorPopup').style.display = 'none';
-    }
 </script>
 </body>
 </html>

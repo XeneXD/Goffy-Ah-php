@@ -10,7 +10,7 @@ if (!isset($_SESSION['name'])) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Departments</title>
+    <title>Programs</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -208,8 +208,8 @@ if (!isset($_SESSION['name'])) {
 <div class="wrapper">
     <header>
         <div>
-            <h1 class="header-title">Departments</h1>
-            <p class="user-info">Logged in as: <?php echo htmlspecialchars($_SESSION['name'] ?? ''); ?></p>
+            <h1 class="header-title">Programs</h1>
+            <p class="user-info">Logged in as: <?php echo htmlspecialchars($_SESSION['name']); ?></p>
         </div>
         <form action="logout.php" method="POST" class="logout-form">
             <button type="submit" class="logout-btn">Logout</button>
@@ -217,11 +217,10 @@ if (!isset($_SESSION['name'])) {
     </header>
 
     <div class="action-bar">
-        <a href="department.entry.php" class="btn add-btn" onclick="refreshDepartments()">Add New Department</a>
-        <a href="Dashboard.php" class="btn back-btn">Back to Dashboard</a>
+        <a href="programs.entry.php" class="btn add-btn">Add New Program</a>
+        <a href="dashboard.php" class="btn back-btn">Back to Dashboard</a>
     </div>
 
-   
     <?php if (isset($_SESSION['success'])): ?>
         <div class="message success"><?php echo htmlspecialchars($_SESSION['success']); unset($_SESSION['success']); ?></div>
     <?php endif; ?>
@@ -232,12 +231,12 @@ if (!isset($_SESSION['name'])) {
 
     <div>
         <label for="collegeDropdown">Select College:</label>
-        <select id="collegeDropdown" onchange="fetchDepartments()">
+        <select id="collegeDropdown" onchange="fetchPrograms()">
             <option value="">All Colleges</option>
         </select>
     </div>
 
-    <h2>Department List</h2>
+    <h2>Program List</h2>
     <table>
         <thead>
             <tr>
@@ -247,31 +246,23 @@ if (!isset($_SESSION['name'])) {
                 <th>Actions</th>
             </tr>
         </thead>
-        <tbody id="department-table-body">
-            
+        <tbody id="program-table-body">
+            <!-- Program rows will be populated here -->
         </tbody>
     </table>
 </div>
 
-<div class="overlay" id="errorPopup">
-    <div class="popup">
-        <h3>Error</h3>
-        <p id="errorMessage"></p>
-        <button class="confirm-btn" onclick="closeErrorPopup()">OK</button>
-    </div>
-</div>
-
-<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+<script src="axios.min.js"></script>
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         fetchColleges();
-        fetchDepartments();
+        fetchPrograms();
 
-        const addDepartmentBtn = document.querySelector('.add-btn');
-        if (addDepartmentBtn) {
-            addDepartmentBtn.addEventListener('click', function(event) {
+        const addProgramBtn = document.querySelector('.add-btn');
+        if (addProgramBtn) {
+            addProgramBtn.addEventListener('click', function(event) {
                 event.preventDefault();
-                window.location.href = 'department.entry.php';
+                window.location.href = 'programs.entry.php';
             });
         }
     });
@@ -290,59 +281,59 @@ if (!isset($_SESSION['name'])) {
                         collegeDropdown.appendChild(option);
                     });
                 } else {
-                    showErrorPopup('Failed to fetch colleges: ' + response.data.error);
+                    alert('Failed to fetch colleges: ' + response.data.error);
                 }
             })
             .catch(function(error) {
                 console.error('There was an error!', error);
-                showErrorPopup('An error occurred while fetching colleges');
+                alert('An error occurred while fetching colleges');
             });
     }
 
-    function fetchDepartments() {
+    function fetchPrograms() {
         const collegeId = document.getElementById('collegeDropdown').value;
         const params = collegeId ? { collid: collegeId } : {};
         
-        axios.get('fetch_departments.php', { params })
+        axios.get('fetch_programs.php', { params })
             .then(function(response) {
                 if (response.data.success) {
-                    const departments = response.data.departments;
-                    const tableBody = document.getElementById('department-table-body');
+                    const programs = response.data.programs;
+                    const tableBody = document.getElementById('program-table-body');
                     tableBody.innerHTML = '';
 
-                    departments.forEach(function(department) {
+                    programs.forEach(function(program) {
                         const row = document.createElement('tr');
                         row.innerHTML = `
-                            <td>${department.deptid}</td>
-                            <td>${department.deptfullname}</td>
-                            <td>${department.deptshortname}</td>
+                            <td>${program.progid}</td>
+                            <td>${program.progfullname}</td>
+                            <td>${program.progshortname}</td>
                             <td>
-                                <button class='edit-btn' onclick='editDepartment(${department.deptid})'>Edit</button>
-                                <button class='delete-btn' onclick='deleteDepartment(${department.deptid})'>Delete</button>
+                                <button class='edit-btn' onclick='editProgram(${program.progid})'>Edit</button>
+                                <button class='delete-btn' onclick='deleteProgram(${program.progid})'>Delete</button>
                             </td>
                         `;
                         tableBody.appendChild(row);
                     });
                 } else {
-                    showErrorPopup('Failed to fetch departments: ' + response.data.error);
+                    alert('Failed to fetch programs: ' + response.data.error);
                 }
             })
             .catch(function(error) {
                 console.error('There was an error!', error);
-                showErrorPopup('An error occurred while fetching departments');
+                alert('An error occurred while fetching programs');
             });
     }
 
-    function editDepartment(id) {
-        window.location.href = `department.entry.php?id=${id}`;
+    function editProgram(id) {
+        window.location.href = `programs.entry.php?id=${id}`;
     }
 
-    function deleteDepartment(id) {
+    function deleteProgram(id) {
         const overlay = document.createElement('div');
         overlay.className = 'overlay';
         overlay.innerHTML = `
             <div class="popup">
-                <h3>Are you sure you want to delete this department?</h3>
+                <h3>Are you sure you want to delete this program?</h3>
                 <button class="confirm-btn">Yes</button>
                 <button class="cancel-btn">No</button>
             </div>
@@ -351,18 +342,18 @@ if (!isset($_SESSION['name'])) {
         overlay.style.display = 'flex';
 
         overlay.querySelector('.confirm-btn').addEventListener('click', () => {
-            axios.post('deleteDepartment.php', { deptid: id })
+            axios.post('deletePrograms.php', { progid: id })
                 .then(response => {
                     if (response.data.success) {
                         document.body.removeChild(overlay);
-                        showPopupMessage('Department deleted successfully', 'success');
+                        showPopupMessage('Program deleted successfully', 'success');
                     } else {
-                        showPopupMessage('Failed to delete department: ' + response.data.error, 'error');
+                        showPopupMessage('Failed to delete program: ' + response.data.error, 'error');
                     }
                 })
                 .catch(error => {
                     console.error('There was an error!', error);
-                    showPopupMessage('An error occurred while deleting the department', 'error');
+                    showPopupMessage('An error occurred while deleting the program', 'error');
                 });
         });
 
@@ -386,22 +377,9 @@ if (!isset($_SESSION['name'])) {
         overlay.querySelector('.confirm-btn').addEventListener('click', () => {
             document.body.removeChild(overlay);
             if (type === 'success') {
-                fetchDepartments();
+                fetchPrograms();
             }
         });
-    }
-
-    function showErrorPopup(message) {
-        document.getElementById('errorMessage').innerText = message;
-        document.getElementById('errorPopup').style.display = 'flex';
-    }
-
-    function closeErrorPopup() {
-        document.getElementById('errorPopup').style.display = 'none';
-    }
-
-    function refreshDepartments() {
-        fetchDepartments();
     }
 </script>
 </body>

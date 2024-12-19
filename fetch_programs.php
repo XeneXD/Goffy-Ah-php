@@ -1,25 +1,22 @@
 <?php
 header('Content-Type: application/json');
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $input = json_decode(file_get_contents('php://input'), true);
-    $collegeId = $input['college_id'] ?? null;
+try {
+    $pdo = new PDO("mysql:host=localhost:3306;dbname=usjr", "root", "root");
+    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
-    if ($collegeId) {
-        try {
-            $pdo = new PDO("mysql:host=localhost:3306;dbname=usjr", "root", "root");
-            $stmt = $pdo->prepare("SELECT progid, progfullname FROM programs WHERE progcollid = ?");
-            $stmt->execute([$collegeId]);
-            $programs = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-            echo json_encode(['programs' => $programs]);
-        } catch (PDOException $e) {
-            echo json_encode(['error' => htmlspecialchars($e->getMessage())]);
-        }
+    $collid = $_GET['collid'] ?? null;
+    if ($collid) {
+        $stmt = $pdo->prepare("SELECT progid, progfullname, progshortname FROM programs WHERE progcollid = ?");
+        $stmt->execute([$collid]);
     } else {
-        echo json_encode(['error' => 'Invalid college ID']);
+        $stmt = $pdo->query("SELECT progid, progfullname, progshortname FROM programs");
     }
-} else {
-    echo json_encode(['error' => 'Invalid request method']);
+    $programs = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    echo json_encode(['success' => true, 'programs' => $programs]);
+} catch (PDOException $e) {
+    error_log("Database error: " . $e->getMessage());
+    echo json_encode(['success' => false, 'error' => 'An error occurred while fetching programs']);
 }
 ?>

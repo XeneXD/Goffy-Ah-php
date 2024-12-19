@@ -10,6 +10,7 @@ CREATE TABLE `usjr`.`appusers` (
 select * from `usjr`.`appusers`;
 select * from `usjr`.`students`;
 select * from `usjr`.`departments`;
+select * from `usjr`.`colleges`;
+select * from `usjr`.`programs`;
 
-drop table `usjr`.`appusers`;
-ALTER TABLE `usjr`.`appusers` MODIFY password VARCHAR(255);
+

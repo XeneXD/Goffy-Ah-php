@@ -117,22 +117,23 @@
             cursor: pointer;
         }
     </style>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
 </head>
 <body>
     <div class="registration-container">
         <h1>Register User</h1>
-        <form action="" method="post">
+        <form id="registerForm" action="save.user.php" method="post">
             <div class="input-group">
                 <label for="user">Username</label>
-                <input type="text" name="user" id="user" value="<?php if(isset($_POST['user'])) echo htmlspecialchars($_POST['user']); ?>" required>
+                <input type="text" name="user" id="user" value="<?php if(isset($_POST['user'])) echo htmlspecialchars($_POST['user']); ?>">
             </div>
             <div class="input-group">
                 <label for="pass">Password</label>
-                <input type="password" name="pass" id="pass" required>
+                <input type="password" name="pass" id="pass">
             </div>
             <div class="input-group">
                 <label for="verify">Verify Password</label>
-                <input type="password" name="verify" id="verify" required>
+                <input type="password" name="verify" id="verify">
             </div>
             <div class="action-buttons">
                 <button type="submit" name="reg" class="submit-btn">Register</button>
@@ -177,46 +178,52 @@
             modalMessage.innerText = message;
             modal.style.display = "flex";
         }
-    </script>
 
-    <?php
-        if (isset($_POST['reg'])) {
-            $user = $_POST['user'];
-            $pass = $_POST['pass'];
-            $verify = $_POST['verify'];
+        document.getElementById('registerForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const formData = new FormData(this);
+            const user = document.getElementById('user').value;
+            const pass = document.getElementById('pass').value;
+            const verify = document.getElementById('verify').value;
+            let errorMessage = '';
+
+            if (!user) {
+                errorMessage += 'Username is required.\n';
+            }
+
+            if (!pass) {
+                errorMessage += 'Password is required.\n';
+            }
+
+            if (!verify) {
+                errorMessage += 'Verify Password is required.\n';
+            }
+
+            if (pass !== verify) {
+                errorMessage += 'Passwords do not match.\n';
+                document.getElementById('pass').value = '';
+                document.getElementById('verify').value = '';
+            }
+
+            if (errorMessage) {
+                showModal(errorMessage);
+                return;
+            }
 
             try {
-                $pdo = new PDO("mysql:host=localhost:3306;dbname=usjr", "root", "root");
-                $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-            } catch (PDOException $e) {
-                echo "<script>showModal('Connection Failed: " . $e->getMessage() . "');</script>";
-                exit();
-            }
-
-            // Check if the username already exists
-            $stmt = $pdo->prepare("SELECT COUNT(*) FROM appusers WHERE username = ?");
-            $stmt->execute([$user]);
-            $userExists = $stmt->fetchColumn();
-
-            if ($userExists) {
-                echo "<script>showModal('Username already exists. Please choose another.');</script>";
-            } elseif ($pass != $verify) {
-                echo "<script>showModal('Passwords do not match.');</script>";
-            } else {
-                $sql = "INSERT INTO appusers (username, password) VALUES (?, ?)";
-                $insertPreparedStatement = $pdo->prepare($sql);
-                $password = password_hash($pass, PASSWORD_DEFAULT);
-                $insertPreparedStatement->bindParam(1, $user, PDO::PARAM_STR);
-                $insertPreparedStatement->bindParam(2, $password, PDO::PARAM_STR);
-
-                $result = $insertPreparedStatement->execute();
-                if ($result) {
-                    echo "<script>showModal('Registration successful!');</script>";
+                const response = await axios.post('save.user.php', formData);
+                if (response.data.success) {
+                    showModal(response.data.message);
+                    document.getElementById('registerForm').reset();
                 } else {
-                    echo "<script>showModal('Registration failed. Please try again.');</script>";
+                    showModal(response.data.error);
                 }
+            } catch (error) {
+                showModal('An error occurred while registering. Please try again.');
+                console.error(error);
             }
-        }
-    ?>
+        });
+    </script>
 </body>
 </html>

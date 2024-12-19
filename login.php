@@ -1,6 +1,8 @@
 <?php
 session_start();
 
+$error_message = '';
+
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['login'])) {
     $username = $_POST['username'];
     $password = $_POST['password'];
@@ -17,16 +19,19 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['login'])) {
             $row = $stmt->fetch(PDO::FETCH_ASSOC);
             if (password_verify($password, $row['password'])) {
                 $_SESSION['name'] = $username;
-                header("Location: Dashboard.php");
+                echo json_encode(['success' => true]);
                 exit();
             } else {
-                $error_message = "Invalid username or password.";
+                echo json_encode(['success' => false, 'error' => 'Invalid username or password.']);
+                exit();
             }
         } else {
-            $error_message = "Invalid username or password.";
+            echo json_encode(['success' => false, 'error' => 'Invalid username or password.']);
+            exit();
         }
     } catch (PDOException $e) {
-        $error_message = "Connection failed: " . $e->getMessage();
+        echo json_encode(['success' => false, 'error' => 'Connection failed: ' . $e->getMessage()]);
+        exit();
     }
 }
 ?>
@@ -143,28 +148,25 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['login'])) {
             text-decoration: underline;
         }
     </style>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
 </head>
 <body>
     <div class="login-wrapper">
         <h2>Login</h2>
 
-        <?php if (!empty($error_message)): ?>
-            <div class="error-message">
-                <?php echo htmlspecialchars($error_message); ?>
-            </div>
-        <?php endif; ?>
+        <div id="error-message" class="error-message" style="display: none;"></div>
 
-        <form action="login.php" method="POST">
+        <form id="loginForm">
             <div class="form-group">
                 <label for="username">Username</label>
-                <input type="text" id="username" name="username" required>
+                <input type="text" id="username" name="username" autocomplete="username">
             </div>
             <div class="form-group">
                 <label for="password">Password</label>
-                <input type="password" id="password" name="password" required>
+                <input type="password" id="password" name="password" autocomplete="current-password">
             </div>
             <div class="button-group">
-                <button type="submit" name="login" class="login-btn">Log-in</button>
+                <button type="submit" class="login-btn">Log-in</button>
                 <button type="reset" class="clear-btn">Clear</button>
             </div>
         </form>
@@ -172,5 +174,54 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['login'])) {
             <p>If you don't have an account, <a href="register.php">Register here</a>.</p>
         </div>
     </div>
+
+    <script>
+        document.getElementById('loginForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+
+            axios.post('fetch_user.php')
+                .then(response => {
+                    if (response.data.success) {
+                        const users = response.data.users;
+                        const userExists = users.some(user => user.username === username);
+
+                        if (userExists) {
+                            axios.post('login.php', new URLSearchParams({
+                                username: username,
+                                password: password,
+                                login: true
+                            }))
+                            .then(response => {
+                                if (response.data.success) {
+                                    window.location.href = 'Dashboard.php';
+                                } else {
+                                    document.getElementById('error-message').innerText = response.data.error;
+                                    document.getElementById('error-message').style.display = 'block';
+                                }
+                            })
+                            .catch(error => {
+                                console.error('There was an error!', error);
+                                document.getElementById('error-message').innerText = 'An error occurred while logging in.';
+                                document.getElementById('error-message').style.display = 'block';
+                            });
+                        } else {
+                            document.getElementById('error-message').innerText = 'User not registered.';
+                            document.getElementById('error-message').style.display = 'block';
+                        }
+                    } else {
+                        document.getElementById('error-message').innerText = 'Failed to fetch users.';
+                        document.getElementById('error-message').style.display = 'block';
+                    }
+                })
+                .catch(error => {
+                    console.error('There was an error!', error);
+                    document.getElementById('error-message').innerText = 'An error occurred while fetching users.';
+                    document.getElementById('error-message').style.display = 'block';
+                });
+        });
+    </script>
 </body>
 </html>
