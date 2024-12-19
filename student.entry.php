@@ -51,7 +51,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['college_id']) && !iss
     $firstName = $_POST['first_name'];
     $lastName = $_POST['last_name'];
     $middleName = $_POST['middle_name'];
-    $yearLevel = $_POST['year_level'];
+    $yearLevel = $_POST['year_level'] ?? ''; // Ensure yearLevel is defined
     $selectedProgram = ''; // Reset program selection
 
     try {
@@ -68,7 +68,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_student'])) {
     $firstName = $_POST['first_name'];
     $lastName = $_POST['last_name'];
     $middleName = $_POST['middle_name'];
-    $yearLevel = $_POST['year_level'];
+    $yearLevel = $_POST['year_level'] ?? ''; // Ensure yearLevel is defined
     $selectedCollege = $_POST['college_id'];
     $selectedProgram = $_POST['program_id'];
 
@@ -92,13 +92,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_student'])) {
                 VALUES (?, ?, ?, ?, ?, ?, ?)
             ");
             $stmt->execute([$new_studid, $firstName, $lastName, $middleName, $selectedProgram, $selectedCollege, $yearLevel]);
-
-            // Redirect to home page after adding a new student
-            header("Location: home.php");
-            exit();
         }
 
-        header("Location: home.php");
+        // Redirect to home page after saving the student
+        header("Location: students.php");
         exit();
     } catch (PDOException $e) {
         echo "<p>Error saving student data: " . htmlspecialchars($e->getMessage()) . "</p>";
@@ -183,6 +180,38 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_student'])) {
     .cancel-btn:hover {
         background-color: #b71c1c;
     }
+    .overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+        z-index: 1000;
+        display: none;
+        justify-content: center;
+        align-items: center;
+    }
+    .popup {
+        background-color: white;
+        padding: 20px;
+        border-radius: 5px;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    }
+    .popup h3 {
+        margin: 0 0 10px;
+    }
+    .popup button {
+        margin: 10px 5px 0;
+        padding: 10px 20px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+    }
+    .popup .confirm-btn {
+        background-color: #4caf50;
+        color: white;
+    }
 </style>
 </head>
 <body>
@@ -191,26 +220,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_student'])) {
     <form id="studentForm" action="student.entry.php<?= $studentId ? '?id=' . $studentId : '' ?>" method="POST">
         <div class="form-group">
             <label for="student_id">Student ID</label>
-            <input type="text" id="student_id" name="student_id" value="<?= htmlspecialchars($studentId ?? '') ?>" readonly>
+            <input type="text" id="student_id" name="student_id" value="<?= htmlspecialchars($studentId ?? '') ?>" readonly autocomplete="off">
         </div>
         <div class="form-group">
             <label for="first_name">First Name</label>
-            <input type="text" id="first_name" name="first_name" value="<?= htmlspecialchars($firstName) ?>" placeholder="Enter first name" required>
+            <input type="text" id="first_name" name="first_name" value="<?= htmlspecialchars($firstName) ?>" placeholder="Enter first name" required autocomplete="given-name">
         </div>
 
         <div class="form-group">
             <label for="last_name">Last Name</label>
-            <input type="text" id="last_name" name="last_name" value="<?= htmlspecialchars($lastName) ?>" placeholder="Enter last name" required>
+            <input type="text" id="last_name" name="last_name" value="<?= htmlspecialchars($lastName) ?>" placeholder="Enter last name" required autocomplete="family-name">
         </div>
 
         <div class="form-group">
             <label for="middle_name">Middle Name</label>
-            <input type="text" id="middle_name" name="middle_name" value="<?= htmlspecialchars($middleName) ?>" placeholder="Enter middle name">
+            <input type="text" id="middle_name" name="middle_name" value="<?= htmlspecialchars($middleName) ?>" placeholder="Enter middle name" autocomplete="additional-name">
         </div>
 
         <div class="form-group">
             <label for="college_id">College</label>
-            <select id="college_id" name="college_id" onchange="this.form.submit()" required>
+            <select id="college_id" name="college_id" required autocomplete="organization">
                 <option value="" disabled <?= empty($selectedCollege) ? 'selected' : '' ?>>Select college</option>
                 <?php
                 try {
@@ -229,7 +258,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_student'])) {
 
         <div class="form-group">
             <label for="program_id">Program</label>
-            <select id="program_id" name="program_id" required>
+            <select id="program_id" name="program_id" required autocomplete="organization">
                 <option value="" selected disabled>Select a program</option>
                 <?php
                 foreach ($programs as $program) {
@@ -242,38 +271,104 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_student'])) {
 
         <div class="form-group">
             <label for="year_level">Year Level</label>
-            <input type="number" id="year_level" name="year_level" value="<?= htmlspecialchars($yearLevel) ?>" min="1" max="5" placeholder="Enter year level" required>
+            <input type="number" id="year_level" name="year_level" value="<?= htmlspecialchars($yearLevel ?? '') ?>" min="1" max="5" placeholder="Enter year level" required autocomplete="off">
         </div>
 
         <div class="button-group">
             <button type="submit" name="save_student"><?= $studentId ? "Update Student" : "Register" ?></button>
-            <button type="button" id="revertChanges">Revert Changes</button>
-            <a href="home.php" class="cancel-btn">Cancel</a>
+            <?php if ($studentId): ?>
+                <button type="button" id="revertChanges">Revert Changes</button>
+            <?php else: ?>
+                <button type="button" id="clearForm">Clear Form</button>
+            <?php endif; ?>
+            <a href="students.php" class="cancel-btn">Cancel</a>
         </div>
     </form>
 </div>
 
+<div class="overlay" id="successPopup">
+    <div class="popup">
+        <h3>Student saved successfully!</h3>
+        <button class="confirm-btn" onclick="closePopup()">OK</button>
+    </div>
+</div>
+
+<script src="axios.min.js"></script>
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const studentForm = document.getElementById('studentForm');
-        const originalData = new FormData(studentForm);
+  document.addEventListener('DOMContentLoaded', function() {
+    const studentForm = document.getElementById('studentForm');
+    const originalData = new FormData(studentForm);
+    const originalCollege = document.getElementById('college_id').value;
+    const originalProgram = document.getElementById('program_id').value;
 
-        document.getElementById('revertChanges').addEventListener('click', function(e) {
-            e.preventDefault();
-            for (let [key, value] of originalData.entries()) {
-                if (studentForm.elements[key]) {
-                    studentForm.elements[key].value = value;
-                }
+    <?php if ($studentId): ?>
+    document.getElementById('revertChanges').addEventListener('click', function(e) {
+        e.preventDefault();
+        for (let [key, value] of originalData.entries()) {
+            if (studentForm.elements[key]) {
+                studentForm.elements[key].value = value;
             }
-        });
-
-        studentForm.addEventListener('submit', function(e) {
-            const currentData = new FormData(studentForm);
-            for (let [key, value] of currentData.entries()) {
-                originalData.set(key, value);
-            }
-        });
+        }
+        document.getElementById('college_id').value = originalCollege;
+        fetchPrograms(originalCollege, originalProgram);
     });
+    <?php else: ?>
+    document.getElementById('clearForm').addEventListener('click', function(e) {
+        e.preventDefault();
+        studentForm.reset();
+        document.getElementById('college_id').value = '';
+        document.getElementById('program_id').innerHTML = '<option value="" selected disabled>Select a program</option>';
+    });
+    <?php endif; ?>
+
+    studentForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        const formData = new FormData(this);
+
+        axios.post('save.students.php', formData)
+            .then(response => {
+                if (response.data.success) {
+                    document.getElementById('successPopup').style.display = 'flex';
+                } else {
+                    alert('Failed to save student: ' + (response.data.error || 'Unknown error occurred.'));
+                }
+            })
+            .catch(error => {
+                console.error('There was an error!', error);
+                alert('Failed to save student: ' + error.message);
+            });
+    });
+
+    document.getElementById('college_id').addEventListener('change', function() {
+        const collegeId = this.value;
+        fetchPrograms(collegeId);
+    });
+
+    function fetchPrograms(collegeId, selectedProgram = '') {
+        axios.post('fetch_programs.php', { college_id: collegeId })
+            .then(response => {
+                const programSelect = document.getElementById('program_id');
+                programSelect.innerHTML = '<option value="" selected disabled>Select a program</option>';
+                response.data.programs.forEach(program => {
+                    const option = document.createElement('option');
+                    option.value = program.progid;
+                    option.textContent = `${program.progid} - ${program.progfullname}`;
+                    if (program.progid == selectedProgram) {
+                        option.selected = true;
+                    }
+                    programSelect.appendChild(option);
+                });
+            })
+            .catch(error => {
+                console.error('There was an error fetching programs!', error);
+            });
+    }
+});
+
+function closePopup() {
+    document.getElementById('successPopup').style.display = 'none';
+    window.location.href = 'students.php';
+}
 </script>
 </body>
 </html>

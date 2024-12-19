@@ -8,6 +8,7 @@ CREATE TABLE `usjr`.`appusers` (
   UNIQUE KEY `username` (`username`)
 );
 select * from `usjr`.`appusers`;
+select * from `usjr`.`students`;
 
 drop table `usjr`.`appusers`;
 ALTER TABLE `usjr`.`appusers` MODIFY password VARCHAR(255);

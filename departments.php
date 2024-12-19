@@ -66,20 +66,32 @@ if (!isset($_SESSION['name'])) {
 
         .action-bar {
             margin: 20px 0;
-            text-align: right;
+            display: flex;
+            justify-content: space-between;
         }
-
-        .add-btn {
-            background-color: #0275d8;
-            color: white;
+        .action-bar .btn {
+            flex: 1;
             padding: 10px 20px;
             border: none;
             border-radius: 5px;
+            color: white;
             cursor: pointer;
+            text-align: center;
+            text-decoration: none;
+            margin: 0 5px;
+            max-width: 200px; 
         }
-
+        .add-btn {
+            background-color: #0275d8;
+        }
         .add-btn:hover {
             background-color: #025aa5;
+        }
+        .back-btn {
+            background-color: #5bc0de;
+        }
+        .back-btn:hover {
+            background-color: #31b0d5;
         }
 
         .message {
@@ -204,7 +216,14 @@ if (!isset($_SESSION['name'])) {
         </form>
     </header>
 
-    <!-- Messages -->
+    <div class="action-bar">
+        <form action="department.entry.php" method="POST">
+            <button type="submit" class="btn add-btn">Add New Department</button>
+        </form>
+        <a href="Dashboard.php" class="btn back-btn">Back to Dashboard</a>
+    </div>
+
+   
     <?php if (isset($_SESSION['success'])): ?>
         <div class="message success"><?php echo htmlspecialchars($_SESSION['success']); unset($_SESSION['success']); ?></div>
     <?php endif; ?>
@@ -213,17 +232,10 @@ if (!isset($_SESSION['name'])) {
         <div class="message error"><?php echo htmlspecialchars($_SESSION['error']); unset($_SESSION['error']); ?></div>
     <?php endif; ?>
 
-    <div class="action-bar">
-        <form action="department.entry.php" method="POST">
-            <button type="submit" class="add-btn">Add New Department</button>
-        </form>
-    </div>
-
-    <!-- College Dropdown -->
     <div>
         <label for="collegeDropdown">Select College:</label>
         <select id="collegeDropdown" onchange="fetchDepartments()">
-            <option value="">Select a College</option>
+            <option value="">All Colleges</option>
         </select>
     </div>
 
@@ -232,29 +244,31 @@ if (!isset($_SESSION['name'])) {
         <thead>
             <tr>
                 <th>ID</th>
-                <th>Name</th>
+                <th>Full Name</th>
+                <th>Short Name</th>
                 <th>Actions</th>
             </tr>
         </thead>
         <tbody id="department-table-body">
-            <!-- Data will be populated here by JavaScript -->
+            
         </tbody>
     </table>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+<script src="axios.min.js"></script>
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         fetchColleges();
+        fetchDepartments();
     });
 
     function fetchColleges() {
-        axios.get('fetch_departments.php')
+        axios.post('fetch_departments.php')
             .then(function(response) {
                 if (response.data.success) {
                     const colleges = response.data.colleges;
                     const collegeDropdown = document.getElementById('collegeDropdown');
-                    collegeDropdown.innerHTML = '<option value="">Select a College</option>';
+                    collegeDropdown.innerHTML = '<option value="">All Colleges</option>';
                     colleges.forEach(function(college) {
                         const option = document.createElement('option');
                         option.value = college.collid;
@@ -273,9 +287,9 @@ if (!isset($_SESSION['name'])) {
 
     function fetchDepartments() {
         const collegeId = document.getElementById('collegeDropdown').value;
-        if (!collegeId) return;
+        const params = collegeId ? { collid: collegeId } : {};
         
-        axios.get('fetch_departments.php', { params: { collid: collegeId } })
+        axios.get('fetch_departments.php', { params })
             .then(function(response) {
                 if (response.data.success) {
                     const departments = response.data.departments;
@@ -287,6 +301,7 @@ if (!isset($_SESSION['name'])) {
                         row.innerHTML = `
                             <td>${department.deptid}</td>
                             <td>${department.deptfullname}</td>
+                            <td>${department.deptshortname}</td>
                             <td>
                                 <button class='edit-btn' onclick='editDepartment(${department.deptid})'>Edit</button>
                                 <button class='delete-btn' onclick='deleteDepartment(${department.deptid})'>Delete</button>
@@ -322,10 +337,11 @@ if (!isset($_SESSION['name'])) {
         overlay.style.display = 'flex';
 
         overlay.querySelector('.confirm-btn').addEventListener('click', () => {
-            axios.post('delete_departments.php', { id: id })
+            axios.post('deleteDepartment.php', { deptid: id })
                 .then(response => {
                     if (response.data.success) {
                         showPopupMessage('Department deleted successfully', 'success');
+                        fetchDepartments();
                     } else {
                         showPopupMessage('Failed to delete department: ' + response.data.error, 'error');
                     }
@@ -339,6 +355,16 @@ if (!isset($_SESSION['name'])) {
         overlay.querySelector('.cancel-btn').addEventListener('click', () => {
             document.body.removeChild(overlay);
         });
+    }
+
+    function showPopupMessage(message, type) {
+        const popupMessage = document.createElement('div');
+        popupMessage.className = `message ${type}`;
+        popupMessage.textContent = message;
+        document.body.appendChild(popupMessage);
+        setTimeout(() => {
+            document.body.removeChild(popupMessage);
+        }, 3000);
     }
 </script>
 </body>

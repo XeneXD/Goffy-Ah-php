@@ -17,7 +17,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['login'])) {
             $row = $stmt->fetch(PDO::FETCH_ASSOC);
             if (password_verify($password, $row['password'])) {
                 $_SESSION['name'] = $username;
-                header("Location: home.php");
+                header("Location: Dashboard.php");
                 exit();
             } else {
                 $error_message = "Invalid username or password.";

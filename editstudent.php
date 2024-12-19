@@ -20,7 +20,7 @@
                 .then(response => {
                     if (response.data.success) {
                         alert('Student edited successfully');
-                        window.location.href = 'home.php';
+                        window.location.href = 'students.php';
                     } else {
                         alert('Failed to edit student: ' + response.data.error);
                     }
